@@ -1,4 +1,6 @@
-﻿using System.Threading.Tasks;
+﻿using System.Collections;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
 
@@ -23,6 +25,17 @@ namespace ChatService.Storage.Azure
         public Task<TableResult> ExecuteAsync(TableOperation operation)
         {
             return table.ExecuteAsync(operation);
+        }
+
+        public async Task<IList<TableResult>> ExecuteBatchAsync(TableBatchOperation operation)
+        {
+            return await table.ExecuteBatchAsync(operation);
+        }
+
+        public async Task<TableQuerySegment<T>> ExecuteQuery<T>(TableQuery<T> query)
+        where T : ITableEntity, new()
+        {
+            return await table.ExecuteQuerySegmentedAsync(query, null);
         }
     }
 }

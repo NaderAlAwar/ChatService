@@ -11,8 +11,6 @@ namespace ChatService.Storage
 
         Task AddConversation(Conversation conversation);
 
-        Task<IEnumerable<Message>> ListMessages(string conversationId);
-
-        Task AddMessage(string conversationId, Message message);
+        Task UpdateConversation(Conversation conversation);
     }
 }

@@ -24,7 +24,7 @@ namespace ChatService.Controllers
             this.profileStore = profileStore;
             this.logger = logger;
         }
-
+        
         [HttpGet("{username}")]
         public async Task<IActionResult> ListConversations(string username)
         {
@@ -45,12 +45,12 @@ namespace ChatService.Controllers
             catch (StorageErrorException e)
             {
                 logger.LogError(Events.StorageError, e, "Could not reach storage to list user conversations, username {username}", username);
-                return StatusCode(503);
+                return StatusCode(503, "Failed to reach storage");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, "Failed to retrieve conversations for user {username}", username);
-                return StatusCode(500);
+                return StatusCode(500, "Internal server error");
             }
         }
 
@@ -69,12 +69,12 @@ namespace ChatService.Controllers
             catch (StorageErrorException e)
             {
                 logger.LogError(Events.StorageError, e, "Could not reach storage to add user conversation");
-                return StatusCode(503);
+                return StatusCode(503, "failed to reach storage");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, "Failed to add conversation");
-                return StatusCode(500);
+                return StatusCode(500, "Internal server error");
             }
         }
 
