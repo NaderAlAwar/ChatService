@@ -14,63 +14,73 @@ namespace ChatService.Controllers
     public class ConversationController : Controller
     {
         private readonly IConversationsStore conversationsStore;
+        private readonly IProfileStore profileStore;
         private readonly ILogger<ConversationController> logger;
 
-        public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger)
+        public ConversationController(IConversationsStore conversationsStore, IProfileStore profileStore,
+            ILogger<ConversationController> logger)
         {
             this.conversationsStore = conversationsStore;
+            this.profileStore = profileStore;
             this.logger = logger;
         }
 
-        //TODO: add paging
-        [HttpGet("{conversationId}")]
-        public async Task<IActionResult> ListMessages(string conversationId)
+        [HttpGet("{username}")]
+        public async Task<IActionResult> ListConversations(string username)
         {
             try
             {
-                IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId);
-                IEnumerable<ListMessagesItemDto> dtos =
-                    messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime));
-                return Ok(new ListMessagesDto(dtos));
+                var conversations = await conversationsStore.ListConversations(username);
+
+                var conversationList = new List<ListConversationsItemDto>();
+                foreach (var conversation in conversations)
+                {
+                    string recipientUserName = conversation.Participants.Except(new[] { username }).First();
+                    UserProfile profile = await profileStore.GetProfile(recipientUserName);
+                    var recipientInfo = new UserInfoDto(profile.Username, profile.FirstName, profile.LastName);
+                    conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo, conversation.LastModifiedDateUtc));
+                }
+                return Ok(new ListConversationsDto(conversationList));
             }
             catch (StorageErrorException e)
             {
-                logger.LogError(Events.StorageError, e, 
-                    "Could not reach storage to list messages, conversationId {conversationId}", conversationId);
+                logger.LogError(Events.StorageError, e, "Could not reach storage to list user conversations, username {username}", username);
                 return StatusCode(503);
             }
             catch (Exception e)
             {
-                logger.LogError(Events.InternalError, e, 
-                    "Failed to list messages of conversation {conversationId}", conversationId);
+                logger.LogError(Events.InternalError, e, "Failed to retrieve conversations for user {username}", username);
                 return StatusCode(500);
             }
         }
 
-        [HttpPost("{id}")]
-        public async Task<IActionResult> PostMessage(string id, [FromBody] SendMessageDto messageDto)
+        [HttpPost()]
+        public async Task<IActionResult> CreateConversation([FromBody] CreateConversationDto conversationDto)
         {
             try
             {
-                var message = new Message(messageDto.Text, messageDto.SenderUsername, DateTime.UtcNow);
-                await conversationsStore.AddMessage(id, message);
+                string id = GenerateConversationId(conversationDto);
+                Conversation conversation = new Conversation(id, conversationDto.Participants, DateTime.UtcNow);
+                await conversationsStore.AddConversation(conversation);
 
-                logger.LogInformation(Events.ConversationMessageAdded, 
-                    "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
-                return Ok(message);
+                logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
+                return Ok(conversation);
             }
             catch (StorageErrorException e)
             {
-                logger.LogError(Events.StorageError, e, 
-                    "Could not reach storage to add message, conversationId {conversationId}", id);
+                logger.LogError(Events.StorageError, e, "Could not reach storage to add user conversation");
                 return StatusCode(503);
             }
             catch (Exception e)
             {
-                logger.LogError(Events.InternalError, e, 
-                    "Failed to add message to conversation, conversationId: {conversationId}", id);
+                logger.LogError(Events.InternalError, e, "Failed to add conversation");
                 return StatusCode(500);
             }
+        }
+
+        private static string GenerateConversationId(CreateConversationDto conversationDto)
+        {
+            return string.Join("_", conversationDto.Participants.OrderBy(key => key));
         }
     }
 }

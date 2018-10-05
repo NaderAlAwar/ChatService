@@ -100,6 +100,9 @@ namespace ChatService.Client
             }
             catch (Exception e)
             {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
                 throw new ChatServiceException("Failed to reach chat service", e,
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
@@ -126,6 +129,9 @@ namespace ChatService.Client
             }
             catch (Exception e)
             {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
                 throw new ChatServiceException("Failed to reach chat service", e,
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
@@ -135,11 +141,11 @@ namespace ChatService.Client
         {
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}");
+                HttpResponseMessage response = await httpClient.GetAsync($"api/message/{conversationId}");
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                    throw new ChatServiceException("Failed to list messages", response.ReasonPhrase, response.StatusCode);
                 }
 
                 string content = await response.Content.ReadAsStringAsync();
@@ -152,6 +158,9 @@ namespace ChatService.Client
             }
             catch (Exception e)
             {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
                 throw new ChatServiceException("Failed to reach chat service", e,
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
@@ -162,12 +171,12 @@ namespace ChatService.Client
             try
             {
                 HttpResponseMessage response =
-                    await httpClient.PostAsync($"api/conversation/{conversationId}",
+                    await httpClient.PostAsync($"api/message/{conversationId}",
                     new StringContent(JsonConvert.SerializeObject(messageDto), Encoding.UTF8, "application/json"));
 
                 if (!response.IsSuccessStatusCode)
                 {
-                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                    throw new ChatServiceException("Failed to send message", response.ReasonPhrase, response.StatusCode);
                 }
             }
             catch (JsonException e)
@@ -177,6 +186,9 @@ namespace ChatService.Client
             }
             catch (Exception e)
             {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
                 throw new ChatServiceException("Failed to reach chat service", e,
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }

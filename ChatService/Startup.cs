@@ -1,11 +1,16 @@
+<<<<<<< 32085f2f7d2ebf48b3f2b09b4aea4cba5e185473
 ﻿using System;
 using System.IO;
+=======
+﻿using ChatService.Providers;
+>>>>>>> Add the needed functionality to allow the saving of messages in Azure
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace ChatService
@@ -29,18 +34,19 @@ namespace ChatService
 
             AzureStorageSettings azureStorageSettings = GetStorageSettings();
 
-            if (azureStorageSettings.ConnectionString == null)
-            {
-                Console.WriteLine("asdasd");
-            }
-
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
+            AzureCloudTable messageCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
+
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
+            AzureTableMessageStore messageStore = new AzureTableMessageStore(messageCloudTable);
             services.AddSingleton<IProfileStore>(profileStore);
+            services.AddSingleton<IMessageStore>(messageStore);
 
             AzureCloudTable usersCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
             AzureTableUserStore usersStore = new AzureTableUserStore(usersCloudTable);
             services.AddSingleton<IConversationsStore>(usersStore);
+
+            services.TryAddSingleton<ITimeProvider, UtcTimeProvider>();
 
             services.AddLogging();
             services.AddMvc();

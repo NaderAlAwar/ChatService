@@ -37,5 +37,11 @@ namespace ChatService.Storage.Azure
         {
             return await table.ExecuteQuerySegmentedAsync(query, null);
         }
+
+        public Task<TableQuerySegment<T>> ExecuteQuery<T>(TableQuery<T> query, TableContinuationToken token) 
+        where T : ITableEntity, new()
+        {
+            return table.ExecuteQuerySegmentedAsync<T>(query, token);
+        }
     }
 }
