@@ -1,9 +1,0 @@
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/bin/Debug/netstandard2.0/ChatService.Common.deps.json
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/bin/Debug/netstandard2.0/ChatService.Common.dll
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/bin/Debug/netstandard2.0/ChatService.Common.pdb
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.csprojAssemblyReference.cache
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.csproj.CoreCompileInputs.cache
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.AssemblyInfoInputs.cache
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.AssemblyInfo.cs
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.dll
-/home/tsugiru/Documents/uni/fall2018/EECE503E/Lab4/ChatService.Common/obj/Debug/netstandard2.0/ChatService.Common.pdb
