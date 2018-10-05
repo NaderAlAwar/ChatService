@@ -5,5 +5,6 @@
         public string ConnectionString { get; set; }
         public string ProfilesTableName { get; set; }
         public string UsersTableName { get; set; }
+        public string MessagesTableName { get; set; }
     }
 }

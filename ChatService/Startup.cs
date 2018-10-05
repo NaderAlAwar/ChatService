@@ -1,22 +1,23 @@
-﻿using System;
+﻿﻿using System;
 using System.IO;
+﻿using ChatService.Providers;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection.Extensions;
 using Microsoft.Extensions.Logging;
 
 namespace ChatService
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, IHostingEnvironment env)
+        public Startup()
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath("C:\\Users\\Asus\\Desktop\\Lab4\\ChatService.Configuration")
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                .AddJsonFile("appsettings.json");
             Configuration = builder.Build();
         }
         
@@ -29,18 +30,19 @@ namespace ChatService
 
             AzureStorageSettings azureStorageSettings = GetStorageSettings();
 
-            if (azureStorageSettings.ConnectionString == null)
-            {
-                Console.WriteLine("asdasd");
-            }
-
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
+            AzureCloudTable messageCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
+
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
+            AzureTableMessageStore messageStore = new AzureTableMessageStore(messageCloudTable);
             services.AddSingleton<IProfileStore>(profileStore);
+            services.AddSingleton<IMessageStore>(messageStore);
 
             AzureCloudTable usersCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
             AzureTableUserStore usersStore = new AzureTableUserStore(usersCloudTable);
             services.AddSingleton<IConversationsStore>(usersStore);
+
+            services.TryAddSingleton<ITimeProvider, UtcTimeProvider>();
 
             services.AddLogging();
             services.AddMvc();

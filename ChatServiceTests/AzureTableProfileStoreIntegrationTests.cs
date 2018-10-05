@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using ChatServiceTests.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceTests
@@ -11,32 +13,24 @@ namespace ChatServiceTests
     [TestCategory("Integration")]
     public class AzureTableProfileStoreIntegrationTests
     {
-        private const string connectionString = "UseDevelopmentStorage=true";
-
+        private static string ConnectionString { get; set; }
         private AzureTableProfileStore store;
         private readonly UserProfile testProfile = new UserProfile(Guid.NewGuid().ToString(), "Nehme", "Bilal");
-        private static AzureStorageEmulatorProxy emulator;
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext testContext)
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            emulator.ClearAll();
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            emulator.StopEmulator();
+            IConfiguration configuration = InitConfiguration();
+            IConfiguration storageConfiguration = configuration.GetSection(nameof(AzureStorageSettings));
+            AzureStorageSettings azureStorageSettings = new AzureStorageSettings();
+            storageConfiguration.Bind(azureStorageSettings);
+            ConnectionString = azureStorageSettings.ConnectionString;
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            var table = new AzureCloudTable(connectionString, "TestTable");
+            var table = new AzureCloudTable(ConnectionString, "ProfileTestTable");
             await table.CreateIfNotExistsAsync();
             store = new AzureTableProfileStore(table);
             
@@ -107,5 +101,15 @@ namespace ChatServiceTests
 
             Assert.AreEqual(testProfile, await store.GetProfile(testProfile.Username));
         }
+
+        private static IConfiguration InitConfiguration()
+        {
+            var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.test.json")
+            .Build();
+            return config;
+        }
+
     }
 }

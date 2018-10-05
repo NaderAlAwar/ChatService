@@ -11,6 +11,7 @@ namespace ChatService.Logging
         public static readonly EventId StorageError = CreateEvent(nameof(StorageError));
         public static readonly EventId ConversationMessageAdded = CreateEvent(nameof(ConversationMessageAdded));
         public static readonly EventId ConversationCreated = CreateEvent(nameof(ConversationCreated));
+        public static readonly EventId MessageAlreadyExists = CreateEvent(nameof(MessageAlreadyExists));
 
         private static EventId CreateEvent(string eventName)
         {

@@ -6,7 +6,6 @@ namespace ChatService.Storage
 {
     public interface IConversationsStore
     {
-        /// <returns>The list of all conversations of a given user sorted by the last time the conversation was modified (recent conversations first)</returns>
         Task<IEnumerable<Conversation>> ListConversations(string username);
 
         Task AddConversation(Conversation conversation);
