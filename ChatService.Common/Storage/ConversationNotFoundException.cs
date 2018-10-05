@@ -4,7 +4,7 @@ using System.Runtime.Serialization;
 namespace ChatService.Storage
 {
     [Serializable]
-    internal class ConversationNotFoundException : Exception
+    public class ConversationNotFoundException : Exception
     {
         public ConversationNotFoundException(string message) : base(message)
         {

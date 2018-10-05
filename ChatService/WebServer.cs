@@ -7,6 +7,7 @@ namespace ChatService
     {
         public static IWebHostBuilder CreateWebHostBuilder()
         {
+
             return WebHost.CreateDefaultBuilder()
                 .UseStartup<Startup>();
         }
