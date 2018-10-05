@@ -1,9 +1,6 @@
-<<<<<<< 32085f2f7d2ebf48b3f2b09b4aea4cba5e185473
-﻿using System;
+﻿﻿using System;
 using System.IO;
-=======
 ﻿using ChatService.Providers;
->>>>>>> Add the needed functionality to allow the saving of messages in Azure
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Builder;
@@ -17,11 +14,10 @@ namespace ChatService
 {
     public class Startup
     {
-        public Startup(IConfiguration configuration, IHostingEnvironment env)
+        public Startup()
         {
             var builder = new ConfigurationBuilder()
-                .SetBasePath("C:\\Users\\Asus\\Desktop\\Lab4\\ChatService.Configuration")
-                .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
+                .AddJsonFile("appsettings.json");
             Configuration = builder.Build();
         }
         

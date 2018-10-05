@@ -34,17 +34,18 @@ namespace ChatService.Storage.Memory
             messageList.Add(message);
 
             Conversation conversation = userConversations[message.SenderUsername].GetConversation(conversationId);
-            MarkModified(conversation);
+            UpdateConversation(conversation);
 
             return Task.CompletedTask;
         }
 
-        private void MarkModified(Conversation conversation)
+        public Task UpdateConversation(Conversation conversation)
         {
             foreach(string user in conversation.Participants)
             {
                 userConversations[user].MarkModified(conversation.Id);
             }
+            return Task.CompletedTask;
         }
 
         public Task<IEnumerable<Conversation>> ListConversations(string username)

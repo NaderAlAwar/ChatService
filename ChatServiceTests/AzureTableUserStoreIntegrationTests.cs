@@ -1,8 +1,10 @@
 ﻿using System;
+using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
+using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceTests
@@ -11,33 +13,25 @@ namespace ChatServiceTests
     [TestCategory("Integration")]
     public class AzureTableUserStoreIntegrationTests
     {
-        private const string connectionString = "UseDevelopmentStorage=true";
-
+        private static string ConnectionString { get; set; }
         private AzureTableUserStore usersStore;
         private DateTime validDateTime = DateTime.Now;
         private readonly Conversation testConversation = new Conversation(Guid.NewGuid().ToString(), new[]{"foo","bar"}, DateTime.Now);
-        private static AzureStorageEmulatorProxy emulator;
 
         [ClassInitialize]
-        public static void ClassInitialize(TestContext context)
+        public static void ClassInitialize(TestContext testContext)
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            emulator.ClearAll();
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            emulator.StopEmulator();
+            IConfiguration configuration = InitConfiguration();
+            IConfiguration storageConfiguration = configuration.GetSection(nameof(AzureStorageSettings));
+            AzureStorageSettings azureStorageSettings = new AzureStorageSettings();
+            storageConfiguration.Bind(azureStorageSettings);
+            ConnectionString = azureStorageSettings.ConnectionString;
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            var usersTable = new AzureCloudTable(connectionString, "usersTestTable");
+            var usersTable = new AzureCloudTable(ConnectionString, "usersTestTable");
 
             await usersTable.CreateIfNotExistsAsync();
             
@@ -127,5 +121,15 @@ namespace ChatServiceTests
             var retrievedDateTime = retrievedConversation.TicksToDateTime();
             Assert.AreEqual(time2.ToString(), retrievedDateTime.ToString());
         }
+
+        private static IConfiguration InitConfiguration()
+        {
+            var config = new ConfigurationBuilder()
+            .SetBasePath(Directory.GetCurrentDirectory())
+            .AddJsonFile("appsettings.test.json")
+            .Build();
+            return config;
+        }
+
     }
 }
