@@ -32,15 +32,15 @@ namespace ChatService
 
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
             AzureCloudTable messageCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
+            AzureCloudTable usersCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
 
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
-            AzureTableMessageStore messageStore = new AzureTableMessageStore(messageCloudTable);
+            AzureTableUserStore usersStore = new AzureTableUserStore(usersCloudTable);
+            AzureTableMessageStore messageStore = new AzureTableMessageStore(messageCloudTable, usersStore);
+
+            services.AddSingleton<IConversationsStore>(usersStore);
             services.AddSingleton<IProfileStore>(profileStore);
             services.AddSingleton<IMessageStore>(messageStore);
-
-            AzureCloudTable usersCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
-            AzureTableUserStore usersStore = new AzureTableUserStore(usersCloudTable);
-            services.AddSingleton<IConversationsStore>(usersStore);
 
             services.TryAddSingleton<ITimeProvider, UtcTimeProvider>();
 

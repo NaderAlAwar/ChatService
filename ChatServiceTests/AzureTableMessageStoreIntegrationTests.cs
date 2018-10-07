@@ -8,6 +8,7 @@ using Microsoft.Extensions.Configuration;
 using System.IO;
 using System.Linq;
 using System.Collections.Generic;
+using Moq;
 
 namespace ChatServiceTests
 {
@@ -18,6 +19,7 @@ namespace ChatServiceTests
         private static string ConnectionString { get; set; }
 
         private AzureTableMessageStore store;
+        private Mock<IConversationsStore> usersStore;
 
         private string conversationId = Guid.NewGuid().ToString();
 
@@ -36,10 +38,12 @@ namespace ChatServiceTests
         [TestInitialize]
         public async Task TestInitialize()
         {
-            var table = new AzureCloudTable(ConnectionString, "TestTable");
-            await table.CreateIfNotExistsAsync();
-            store = new AzureTableMessageStore(table);
-
+            var messagesTable = new AzureCloudTable(ConnectionString, "messagesTestTable");
+            var usersTable = new AzureCloudTable(ConnectionString, "usersTestTable");
+            await messagesTable.CreateIfNotExistsAsync();
+            await usersTable.CreateIfNotExistsAsync();
+            usersStore = new Mock<IConversationsStore>();
+            store = new AzureTableMessageStore(messagesTable, usersStore.Object);
         }
 
         [TestCleanup]

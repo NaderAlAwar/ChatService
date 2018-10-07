@@ -15,6 +15,7 @@ namespace ChatServiceTests
     public class AzureTableMessageStoreTests
     {
         private Mock<ICloudTable> tableMock;
+        private Mock<IConversationsStore> conversationsStore;
         private AzureTableMessageStore store;
 
         private readonly Message message = new Message("Hello", "Elie", DateTime.UtcNow);
@@ -23,7 +24,8 @@ namespace ChatServiceTests
         public void TestInitialize()
         {
             tableMock = new Mock<ICloudTable>();
-            store = new AzureTableMessageStore(tableMock.Object);
+            conversationsStore = new Mock<IConversationsStore>();
+            store = new AzureTableMessageStore(tableMock.Object, conversationsStore.Object);
 
             tableMock.Setup(m => m.ExecuteAsync(It.IsAny<TableOperation>()))
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 503 }, "Storage is down", null));

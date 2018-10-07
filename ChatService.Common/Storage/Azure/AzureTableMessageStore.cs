@@ -10,10 +10,12 @@ namespace ChatService.Storage.Azure
     public class AzureTableMessageStore : IMessageStore
     {
         private readonly ICloudTable table;
+        private readonly IConversationsStore conversationsStore;
 
-        public AzureTableMessageStore(ICloudTable cloudTable)
+        public AzureTableMessageStore(ICloudTable cloudTable, IConversationsStore conversationsStore)
         {
             this.table = cloudTable;
+            this.conversationsStore = conversationsStore;
         }
 
         public async Task<IEnumerable<Message>> ListMessages(string conversationId)
@@ -47,6 +49,7 @@ namespace ChatService.Storage.Azure
             try
             {
                 await table.ExecuteAsync(insertOperation);
+                await conversationsStore.UpdateConversation(conversationId, message.UtcTime);
             }
             catch (StorageException e)
             {
