@@ -35,19 +35,22 @@ namespace ChatServiceTests
             server = new TestServer(WebServer.CreateWebHostBuilder());
             httpClient = server.CreateClient();
             chatServiceClient = new ChatServiceClient(httpClient);
-            conversationId = Guid.NewGuid().ToString();
         }
 
         [TestMethod]
         public async Task CreateGetMessage()
         {
+            string userOne = Guid.NewGuid().ToString();
+            string userTwo = Guid.NewGuid().ToString();
+            var conversation = await chatServiceClient.AddConversation(new CreateConversationDto()
+                { Participants = new[] {userOne, userTwo } });
             var sendMessageDto = new SendMessageDto(
                 "Hello",
-                "Elie"
+                userOne
             );
 
-            await chatServiceClient.SendMessage(conversationId, sendMessageDto);
-            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(conversationId)).Messages;
+            await chatServiceClient.SendMessage(conversation.Id, sendMessageDto);
+            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(conversation.Id)).Messages;
 
             Assert.AreEqual(messages.Count, 1);
             Assert.AreEqual(messages[0].SenderUsername, sendMessageDto.SenderUsername);
@@ -57,7 +60,7 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task AttemptToGetMessagesFromNonExistingConversation()
         {
-            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(conversationId)).Messages;
+            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(Guid.NewGuid().ToString())).Messages;
             Assert.AreEqual(messages.Count, 0);
         }
 
@@ -70,16 +73,20 @@ namespace ChatServiceTests
                 .Returns(currentTime);
             InjectCustomTimeProviderToMessageController(timeProviderMock.Object);
 
+            string userOne = Guid.NewGuid().ToString();
+            string userTwo = Guid.NewGuid().ToString();
+            var conversation = await chatServiceClient.AddConversation(new CreateConversationDto()
+                { Participants = new[] { userOne, userTwo } });
             var sendMessageDto = new SendMessageDto(
                 "Hello",
-                "Elie"
+                userOne
             );
 
-            await chatServiceClient.SendMessage(conversationId, sendMessageDto);
+            await chatServiceClient.SendMessage(conversation.Id, sendMessageDto);
 
             try
             {
-                await chatServiceClient.SendMessage(conversationId, sendMessageDto);
+                await chatServiceClient.SendMessage(conversation.Id, sendMessageDto);
                 Assert.Fail("A ChatServiceException was expected but was not thrown");
             }
             catch (ChatServiceException e)
@@ -92,17 +99,20 @@ namespace ChatServiceTests
         public async Task ListMessagesShouldComeBackSortedInReverseChronologicalOrder() {
             IncreasingTimeProvider increasingTimeProvider = new IncreasingTimeProvider();
             InjectCustomTimeProviderToMessageController(increasingTimeProvider);
-
+            string userOne = Guid.NewGuid().ToString();
+            string userTwo = Guid.NewGuid().ToString();
+            var conversation = await chatServiceClient.AddConversation(new CreateConversationDto()
+                { Participants = new[] { userOne, userTwo } });
             var sendMessageDto = new SendMessageDto(
                 "Hello",
-                "Elie"
+                userOne
             );
 
             for(int i = 0; i < 10; i++) {
-                await chatServiceClient.SendMessage(conversationId, sendMessageDto);
+                await chatServiceClient.SendMessage(conversation.Id, sendMessageDto);
             }
 
-            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(conversationId)).Messages;
+            List<ListMessagesItemDto> messages = (await chatServiceClient.ListMessages(conversation.Id)).Messages;
 
             Assert.AreEqual(messages.Count, 10);
             for(int i = 1; i < 10; i++) {
@@ -124,7 +134,7 @@ namespace ChatServiceTests
 
             try
             {
-                await chatServiceClient.SendMessage(conversationId, sendMessageDto);
+                await chatServiceClient.SendMessage(Guid.NewGuid().ToString(), sendMessageDto);
                 Assert.Fail("A ChatServiceException was expected but was not thrown");
             }
             catch (ChatServiceException e)
