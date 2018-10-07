@@ -51,7 +51,7 @@ namespace ChatServiceTests
         public async Task UpdateConversation_StorageIsUnavailable()
         {
             await store.AddConversation(testConversation);
-            await store.UpdateConversation(new Conversation("foo_bar", new[] { "foo", "bar" }, DateTime.Now.AddSeconds(1)));
+            await store.UpdateConversation("foo", DateTime.Now);
         }
     }
 }

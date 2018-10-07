@@ -1,4 +1,5 @@
-﻿using ChatService.DataContracts;
+﻿using System;
+using ChatService.DataContracts;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 
@@ -10,6 +11,6 @@ namespace ChatService.Storage
 
         Task AddConversation(Conversation conversation);
 
-        Task UpdateConversation(Conversation conversation);
+        Task UpdateConversation(string conversationId, DateTime newTimeStamp);
     }
 }

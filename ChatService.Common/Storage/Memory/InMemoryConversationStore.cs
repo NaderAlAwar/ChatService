@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 
@@ -22,6 +23,11 @@ namespace ChatService.Storage.Memory
                 AddConversation(participantUsername, conversation);
             }
             return Task.CompletedTask;
+        }
+
+        public Task UpdateConversation(string conversationId, DateTime newTimeStamp)
+        {
+            throw new NotImplementedException();
         }
 
         public Task AddMessage(string conversationId, Message message)

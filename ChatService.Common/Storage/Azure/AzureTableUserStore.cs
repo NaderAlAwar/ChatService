@@ -57,6 +57,7 @@ namespace ChatService.Storage.Azure
                 PartitionKey = conversation.Participants[0],
                 RowKey = conversation.Id,
                 dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
+                recipient = conversation.Participants[1]
             };
 
             var secondIdEntity = new UsersTableEntity()
@@ -64,6 +65,7 @@ namespace ChatService.Storage.Azure
                 PartitionKey = conversation.Participants[1],
                 RowKey = conversation.Id,
                 dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
+                recipient = conversation.Participants[0]
             };
 
             var firstTsEntity = new UsersTableEntity()
@@ -105,64 +107,59 @@ namespace ChatService.Storage.Azure
             }
         }
 
-        public async Task UpdateConversation(Conversation conversation)
+        public async Task UpdateConversation(string conversationId, DateTime newTimeStamp)
         {
-            validateConversation(conversation);
+            if (string.IsNullOrWhiteSpace(conversationId))
+            {
+                throw new ArgumentNullException("conversationId cannot be null or empty");
+            }
 
-            UsersTableEntity userOneEntity = await retrieveEntity(conversation.Participants[0], conversation.Id);
-            UsersTableEntity userTwoEntity = await retrieveEntity(conversation.Participants[1], conversation.Id);
+            var idFilter = TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, conversationId);
+            var idQuery = new TableQuery<UsersTableEntity>().Where(idFilter);
+            var conversations = await table.ExecuteQuery(idQuery);
 
-            var userOneFilter =
-                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversation.Participants[0]);
-            var userTwoFilter =
-                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversation.Participants[1]);
-            var tsFilter =
-                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, "ticks_" + userOneEntity.dateTime);   // should be the same for both entities
-
-            var queryOne = new TableQuery<UsersTableEntity>().Where(
-                TableQuery.CombineFilters(userOneFilter, TableOperators.And, tsFilter));
-            var queryTwo = new TableQuery<UsersTableEntity>().Where(
-                TableQuery.CombineFilters(userTwoFilter, TableOperators.And, tsFilter));
-
-            var resultOne = await table.ExecuteQuery(queryOne);
-            var resultTwo = await table.ExecuteQuery(queryTwo);
-
-            if (resultOne.Results.Count == 0 || resultTwo.Results.Count == 0)
+            if (conversations.Results.Count == 0)
             {
                 throw new ConversationNotFoundException("Could not find the requested conversation");
             }
 
-            UsersTableEntity userOneTsEntity = resultOne.Results[0];
-            UsersTableEntity userTwoTsEntity = resultTwo.Results[0];
+            if (conversations.Results.Count != 2)
+            {
+                throw new StorageException("There should be exactly two conversations");
+            }
 
-            string currentTime = "ticks_" + conversation.LastModifiedDateUtc.Ticks.ToString();
-            userOneEntity.dateTime = currentTime;
-            userTwoEntity.dateTime = currentTime;
+            string oldTimeStamp = "ticks_" + conversations.Results[0].dateTime; // should be the same for both conversations
+            string newTimeStampInTicks = "ticks_" + newTimeStamp.Ticks;
+
+            string userOne = conversations.Results[0].recipient;
+            string userTwo = conversations.Results[1].recipient;
+
+            conversations.Results[0].dateTime = newTimeStampInTicks;    // update old entities
+            conversations.Results[1].dateTime = newTimeStampInTicks;
+
+            var oldEntityOne = await retrieveEntity(userOne, oldTimeStamp);   // these will be deleted
+            var oldEntityTwo = await retrieveEntity(userTwo, oldTimeStamp);
+
+            var newEntityOne = new UsersTableEntity // these will be inserted
+            {
+                PartitionKey = userOne, RowKey = newTimeStampInTicks, conversationId = conversationId
+            };
+
+            var newEntityTwo = new UsersTableEntity()
+            {
+                PartitionKey = userTwo, RowKey = newTimeStampInTicks, conversationId = conversationId
+            };
 
             var firstTableBatchOperation = new TableBatchOperation();
             var secondTableBatchOperation = new TableBatchOperation();
-
-            firstTableBatchOperation.Replace(userOneEntity);
-            secondTableBatchOperation.Replace(userTwoEntity);
-            firstTableBatchOperation.Delete(userOneTsEntity);
-            secondTableBatchOperation.Delete(userTwoTsEntity);
-
-            var newTsEntityOne = new UsersTableEntity
-            {
-                PartitionKey = conversation.Participants[0],
-                RowKey = currentTime,
-                conversationId = conversation.Id
-            };
-            var newTsEntityTwo = new UsersTableEntity
-            {
-                PartitionKey = conversation.Participants[1],
-                RowKey = currentTime,
-                conversationId = conversation.Id
-            };
-
-            firstTableBatchOperation.Insert(newTsEntityOne);
-            secondTableBatchOperation.Insert(newTsEntityTwo);
-
+            
+            firstTableBatchOperation.Replace(conversations.Results[1]);
+            secondTableBatchOperation.Replace(conversations.Results[0]);
+            firstTableBatchOperation.Delete(oldEntityOne);
+            secondTableBatchOperation.Delete(oldEntityTwo);
+            firstTableBatchOperation.Insert(newEntityOne);
+            secondTableBatchOperation.Insert(newEntityTwo);
+            
             try
             {
                 await table.ExecuteBatchAsync(firstTableBatchOperation);
@@ -173,6 +170,75 @@ namespace ChatService.Storage.Azure
                 throw new StorageErrorException("Could not write to azure table", e);
             }
         }
+
+        //        public async Task UpdateConversation(Conversation conversation)
+        //        {
+        //            validateConversation(conversation);
+        //
+        //            UsersTableEntity userOneEntity = await retrieveEntity(conversation.Participants[0], conversation.Id);
+        //            UsersTableEntity userTwoEntity = await retrieveEntity(conversation.Participants[1], conversation.Id);
+        //
+        //            var userOneFilter =
+        //                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversation.Participants[0]);
+        //            var userTwoFilter =
+        //                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversation.Participants[1]);
+        //            var tsFilter =
+        //                TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.Equal, "ticks_" + userOneEntity.dateTime);   // should be the same for both entities
+        //
+        //            var queryOne = new TableQuery<UsersTableEntity>().Where(
+        //                TableQuery.CombineFilters(userOneFilter, TableOperators.And, tsFilter));
+        //            var queryTwo = new TableQuery<UsersTableEntity>().Where(
+        //                TableQuery.CombineFilters(userTwoFilter, TableOperators.And, tsFilter));
+        //
+        //            var resultOne = await table.ExecuteQuery(queryOne);
+        //            var resultTwo = await table.ExecuteQuery(queryTwo);
+        //
+        //            if (resultOne.Results.Count == 0 || resultTwo.Results.Count == 0)
+        //            {
+        //                throw new ConversationNotFoundException("Could not find the requested conversation");
+        //            }
+        //
+        //            UsersTableEntity userOneTsEntity = resultOne.Results[0];
+        //            UsersTableEntity userTwoTsEntity = resultTwo.Results[0];
+        //
+        //            string currentTime = "ticks_" + conversation.LastModifiedDateUtc.Ticks.ToString();
+        //            userOneEntity.dateTime = currentTime;
+        //            userTwoEntity.dateTime = currentTime;
+        //
+        //            var firstTableBatchOperation = new TableBatchOperation();
+        //            var secondTableBatchOperation = new TableBatchOperation();
+        //
+        //            firstTableBatchOperation.Replace(userOneEntity);
+        //            secondTableBatchOperation.Replace(userTwoEntity);
+        //            firstTableBatchOperation.Delete(userOneTsEntity);
+        //            secondTableBatchOperation.Delete(userTwoTsEntity);
+        //
+        //            var newTsEntityOne = new UsersTableEntity
+        //            {
+        //                PartitionKey = conversation.Participants[0],
+        //                RowKey = currentTime,
+        //                conversationId = conversation.Id
+        //            };
+        //            var newTsEntityTwo = new UsersTableEntity
+        //            {
+        //                PartitionKey = conversation.Participants[1],
+        //                RowKey = currentTime,
+        //                conversationId = conversation.Id
+        //            };
+        //
+        //            firstTableBatchOperation.Insert(newTsEntityOne);
+        //            secondTableBatchOperation.Insert(newTsEntityTwo);
+        //
+        //            try
+        //            {
+        //                await table.ExecuteBatchAsync(firstTableBatchOperation);
+        //                await table.ExecuteBatchAsync(secondTableBatchOperation);
+        //            }
+        //            catch (StorageException e)
+        //            {
+        //                throw new StorageErrorException("Could not write to azure table", e);
+        //            }
+        //        }
 
         public async Task<UsersTableEntity> retrieveEntity(string partitionKey, string rowKey)
         {
