@@ -9,6 +9,7 @@ namespace ChatService.Storage.Azure
     public class AzureTableUserStore : IConversationsStore
     {
         private readonly ICloudTable table;
+        private const string rowkeyTsPrefix = "ticks_";
 
         public AzureTableUserStore(ICloudTable cloudTable)
         {
@@ -52,50 +53,14 @@ namespace ChatService.Storage.Azure
         public async Task AddConversation(Conversation conversation)
         {
             validateConversation(conversation);
-            var firstIdEntity = new UsersTableEntity()
-            {
-                PartitionKey = conversation.Participants[0],
-                RowKey = conversation.Id,
-                dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
-                recipient = conversation.Participants[1]
-            };
 
-            var secondIdEntity = new UsersTableEntity()
-            {
-                PartitionKey = conversation.Participants[1],
-                RowKey = conversation.Id,
-                dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
-                recipient = conversation.Participants[0]
-            };
-
-            var firstTsEntity = new UsersTableEntity()
-            {
-                PartitionKey = conversation.Participants[0],
-                RowKey = "ticks_" + conversation.LastModifiedDateUtc.Ticks.ToString(),
-                conversationId = conversation.Id,
-                recipient = conversation.Participants[1]
-            };
-
-            var secondTsEntity = new UsersTableEntity()
-            {
-                PartitionKey = conversation.Participants[1],
-                RowKey = "ticks_" + conversation.LastModifiedDateUtc.Ticks.ToString(),
-                conversationId = conversation.Id,
-                recipient = conversation.Participants[0]
-            };
-
-            var firstTableBatchOperation = new TableBatchOperation();
-            var secondTableBatchOperation = new TableBatchOperation();
-
-            firstTableBatchOperation.Insert(firstIdEntity);
-            firstTableBatchOperation.Insert(firstTsEntity);
-            secondTableBatchOperation.Insert(secondIdEntity);
-            secondTableBatchOperation.Insert(secondTsEntity);
+            var firstTableBatchOperation = await AddEntitiesForUser(conversation, conversation.Participants[0], conversation.Participants[1]);
+            var secondTableBatchOperation = await AddEntitiesForUser(conversation, conversation.Participants[1], conversation.Participants[0]);
 
             try
             {
-                await table.ExecuteBatchAsync(firstTableBatchOperation);
-                await table.ExecuteBatchAsync(secondTableBatchOperation);
+                await Task.WhenAll(table.ExecuteBatchAsync(firstTableBatchOperation),
+                    table.ExecuteBatchAsync(secondTableBatchOperation));
             }
             catch (StorageException e)
             {
@@ -105,6 +70,54 @@ namespace ChatService.Storage.Azure
                 }
                 throw new StorageErrorException("Could not write to azure table", e);
             }
+        }
+
+        private async Task<TableBatchOperation> AddEntitiesForUser(Conversation conversation, string userFrom, string userTo)
+        {
+            var idEntity = new UsersTableEntity
+            {
+                PartitionKey = userFrom,
+                RowKey = conversation.Id,
+                dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
+                recipient = userTo
+            };
+
+            var tsEntity = new UsersTableEntity()
+            {
+                PartitionKey = userFrom,
+                RowKey = rowkeyTsPrefix + conversation.LastModifiedDateUtc.Ticks.ToString(),
+                conversationId = conversation.Id,
+                recipient = userTo
+            };
+
+            var tableBatchOperation = new TableBatchOperation();
+            tableBatchOperation.Insert(idEntity);
+            tableBatchOperation.Insert(tsEntity);
+
+            return tableBatchOperation;
+
+        }
+
+        private async Task<TableBatchOperation> UpdateEntitiesForUser(UsersTableEntity entityToUpdate, string newTimeStamp)
+        {
+            var tableBatchOperation = new TableBatchOperation();
+
+            string oldTimeStamp = rowkeyTsPrefix + entityToUpdate.dateTime;
+            entityToUpdate.dateTime = newTimeStamp;
+            tableBatchOperation.Replace(entityToUpdate);
+
+            var oldEntity = await retrieveEntity(entityToUpdate.PartitionKey, oldTimeStamp);
+            tableBatchOperation.Delete(oldEntity);
+
+            var newEntity = new UsersTableEntity
+            {
+                PartitionKey = entityToUpdate.PartitionKey,
+                RowKey = rowkeyTsPrefix + newTimeStamp,
+                conversationId = entityToUpdate.RowKey
+            };
+            tableBatchOperation.Insert(newEntity);
+
+            return tableBatchOperation;
         }
 
         public async Task UpdateConversation(string conversationId, DateTime newTimeStamp)
@@ -128,42 +141,15 @@ namespace ChatService.Storage.Azure
                 throw new StorageException("There should be exactly two entities");
             }
 
-            string oldTimeStamp = "ticks_" + conversations.Results[0].dateTime; // should be the same for both conversations
             string newTimeStampInTicks = newTimeStamp.Ticks.ToString();
 
-            string userOne = conversations.Results[0].recipient;
-            string userTwo = conversations.Results[1].recipient;
+            var firstTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[0], newTimeStampInTicks);
+            var secondTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[1], newTimeStampInTicks);
 
-            conversations.Results[0].dateTime = newTimeStampInTicks;    // update old entities
-            conversations.Results[1].dateTime = newTimeStampInTicks;
-
-            var oldEntityOne = await retrieveEntity(userOne, oldTimeStamp);   // these will be deleted
-            var oldEntityTwo = await retrieveEntity(userTwo, oldTimeStamp);
-
-            var newEntityOne = new UsersTableEntity // these will be inserted
-            {
-                PartitionKey = userOne, RowKey = "ticks_" + newTimeStampInTicks, conversationId = conversationId
-            };
-
-            var newEntityTwo = new UsersTableEntity()
-            {
-                PartitionKey = userTwo, RowKey = "ticks_" + newTimeStampInTicks, conversationId = conversationId
-            };
-
-            var firstTableBatchOperation = new TableBatchOperation();
-            var secondTableBatchOperation = new TableBatchOperation();
-            
-            firstTableBatchOperation.Replace(conversations.Results[1]);
-            secondTableBatchOperation.Replace(conversations.Results[0]);
-            firstTableBatchOperation.Delete(oldEntityOne);
-            secondTableBatchOperation.Delete(oldEntityTwo);
-            firstTableBatchOperation.Insert(newEntityOne);
-            secondTableBatchOperation.Insert(newEntityTwo);
-            
             try
             {
-                await table.ExecuteBatchAsync(firstTableBatchOperation);
-                await table.ExecuteBatchAsync(secondTableBatchOperation);
+                await Task.WhenAll(table.ExecuteBatchAsync(firstTableBatchOperation),
+                    table.ExecuteBatchAsync(secondTableBatchOperation));
             }
             catch (StorageException e)
             {
