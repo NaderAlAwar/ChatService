@@ -1,9 +1,9 @@
 ﻿using System;
-using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
+using ChatServiceTests.Utils;
 using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
@@ -21,7 +21,7 @@ namespace ChatServiceTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
-            IConfiguration configuration = InitConfiguration();
+            IConfiguration configuration = TestUtils.InitConfiguration();
             IConfiguration storageConfiguration = configuration.GetSection(nameof(AzureStorageSettings));
             AzureStorageSettings azureStorageSettings = new AzureStorageSettings();
             storageConfiguration.Bind(azureStorageSettings);
@@ -126,15 +126,6 @@ namespace ChatServiceTests
             var retrievedConversation = await usersStore.retrieveEntity(userOne, firstId);
             var retrievedDateTime = retrievedConversation.TicksToDateTime();
             Assert.AreEqual(time2.ToString(), retrievedDateTime.ToString());
-        }
-
-        private static IConfiguration InitConfiguration()
-        {
-            var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.test.json")
-            .Build();
-            return config;
         }
 
     }

@@ -26,7 +26,7 @@ namespace ChatService.Storage.Azure
 
             foreach (MessageTableEntity entity in messageEntities)
             {
-                Message message = new Message(entity.Text, entity.SenderUsername, new DateTime(-1 * (Convert.ToInt64(entity.RowKey) - DateTime.MaxValue.Ticks)));
+                Message message = new Message(entity.Text, entity.SenderUsername, GetCorrectTimeFromInvertedTime(entity.RowKey));
                 messageList.Add(message);
             }
 
@@ -147,6 +147,10 @@ namespace ChatService.Storage.Azure
 
         private string GetInvertedTimeInTicksAsString(DateTime utcTime) {
             return string.Format("{0:D19}", DateTime.MaxValue.Ticks - utcTime.Ticks);
+        }
+
+        private DateTime GetCorrectTimeFromInvertedTime(string invertedUtcTime) {
+            return new DateTime(-1 * (Convert.ToInt64(invertedUtcTime) - DateTime.MaxValue.Ticks));
         }
 
         private void ValidateMessage(Message message)

@@ -28,7 +28,7 @@ namespace ChatServiceTests
         [ClassInitialize]
         public static void ClassInitialize(TestContext testContext)
         {
-            IConfiguration configuration = InitConfiguration();
+            IConfiguration configuration = TestUtils.InitConfiguration();
             IConfiguration storageConfiguration = configuration.GetSection(nameof(AzureStorageSettings));
             AzureStorageSettings azureStorageSettings = new AzureStorageSettings();
             storageConfiguration.Bind(azureStorageSettings);
@@ -127,14 +127,6 @@ namespace ChatServiceTests
                 await store.TryDelete(conversationId, time);
             }
         }
-
-        private static IConfiguration InitConfiguration()
-        {
-            var config = new ConfigurationBuilder()
-            .SetBasePath(Directory.GetCurrentDirectory())
-            .AddJsonFile("appsettings.test.json")
-            .Build();
-            return config;
-        }
+        
     }
 }
