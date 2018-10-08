@@ -126,6 +126,8 @@ namespace ChatServiceTests
             var retrievedConversation = await usersStore.retrieveEntity(userOne, firstId);
             var retrievedDateTime = retrievedConversation.TicksToDateTime();
             Assert.AreEqual(time2.ToString(), retrievedDateTime.ToString());
+            Assert.AreEqual(userTwo, retrievedConversation.recipient);
+            Assert.AreEqual(firstId, retrievedConversation.conversationId);
         }
 
     }
