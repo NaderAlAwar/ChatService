@@ -113,7 +113,8 @@ namespace ChatService.Storage.Azure
             {
                 PartitionKey = entityToUpdate.PartitionKey,
                 RowKey = rowkeyTsPrefix + newTimeStamp,
-                conversationId = entityToUpdate.RowKey
+                conversationId = entityToUpdate.RowKey,
+                recipient = entityToUpdate.recipient
             };
             tableBatchOperation.Insert(newEntity);
 
