@@ -69,7 +69,7 @@ namespace ChatServiceTests
         {
             DateTime currentTime = DateTime.UtcNow;
             Mock<ITimeProvider> timeProviderMock = new Mock<ITimeProvider>();
-            timeProviderMock.Setup(timeProvider => timeProvider.GetCurrentTime())
+            timeProviderMock.Setup(timeProvider => timeProvider.GetCurrentTimeUtc())
                 .Returns(currentTime);
             InjectCustomTimeProviderToMessageController(timeProviderMock.Object);
 

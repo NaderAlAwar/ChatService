@@ -57,14 +57,8 @@ namespace ChatServiceTests
         {
             await store.AddMessage(conversationId, testMessage);
             IEnumerable<Message> messageList = await store.ListMessages(conversationId);
-
-            int count = 0;
-            foreach(Message message in messageList) {
-                count++;
-                Assert.AreEqual(testMessage, message);
-            }
-            
-            Assert.AreEqual(count, 1);
+            Assert.AreEqual(messageList.Count(), 1);
+            Assert.AreEqual(testMessage, messageList.First());
         }
 
         [TestMethod]

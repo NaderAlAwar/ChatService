@@ -52,7 +52,7 @@ namespace ChatService.Controllers
         [HttpPost("{id}")]
         public async Task<IActionResult> PostMessage(string id, [FromBody] SendMessageDto messageDto)
         {
-            var message = new Message(messageDto.Text, messageDto.SenderUsername, timeProvider.GetCurrentTime());
+            var message = new Message(messageDto.Text, messageDto.SenderUsername, timeProvider.GetCurrentTimeUtc());
             try
             {
                 await messagesStore.AddMessage(id, message);
