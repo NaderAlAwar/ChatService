@@ -141,7 +141,7 @@ namespace ChatService.Client
         {
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync($"api/message/{conversationId}");
+                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -171,7 +171,7 @@ namespace ChatService.Client
             try
             {
                 HttpResponseMessage response =
-                    await httpClient.PostAsync($"api/message/{conversationId}",
+                    await httpClient.PostAsync($"api/conversation/{conversationId}",
                     new StringContent(JsonConvert.SerializeObject(messageDto), Encoding.UTF8, "application/json"));
 
                 if (!response.IsSuccessStatusCode)

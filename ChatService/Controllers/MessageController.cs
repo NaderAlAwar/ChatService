@@ -11,7 +11,7 @@ using Microsoft.Extensions.Logging;
 
 namespace ChatService.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/conversation")]
     public class MessageController : Controller
     {
         private readonly IMessageStore messagesStore;
