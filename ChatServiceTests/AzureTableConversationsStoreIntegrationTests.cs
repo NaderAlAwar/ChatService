@@ -11,10 +11,10 @@ namespace ChatServiceTests
 {
     [TestClass]
     [TestCategory("Integration")]
-    public class AzureTableUserStoreIntegrationTests
+    public class AzureTableConversationsStoreIntegrationTests
     {
         private static string ConnectionString { get; set; }
-        private AzureTableUserStore usersStore;
+        private AzureTableConversationsStore conversationsesStore;
         private DateTime validDateTime = DateTime.Now;
         private readonly Conversation testConversation = new Conversation(Guid.NewGuid().ToString(), new[]{"foo","bar"}, DateTime.Now);
 
@@ -35,7 +35,7 @@ namespace ChatServiceTests
 
             await usersTable.CreateIfNotExistsAsync();
             
-            usersStore = new AzureTableUserStore(usersTable);
+            conversationsesStore = new AzureTableConversationsStore(usersTable);
         }
 
         [TestMethod]
@@ -47,7 +47,7 @@ namespace ChatServiceTests
         public async Task AddInvalidConversation(string id, string[] participants, string ignore)
         {
             Conversation test = new Conversation(id,participants,validDateTime);
-            await usersStore.AddConversation(test);
+            await conversationsesStore.AddConversation(test);
         }
 
         [TestMethod]
@@ -56,7 +56,7 @@ namespace ChatServiceTests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task UpdateInvalidConversation(string id)
         {
-            await usersStore.UpdateConversation(id, validDateTime);
+            await conversationsesStore.UpdateConversation(id, validDateTime);
         }
 
         [TestMethod]
@@ -65,20 +65,20 @@ namespace ChatServiceTests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task ListInvalidUsernameConversations(string username)
         {
-            await usersStore.ListConversations(username);
+            await conversationsesStore.ListConversations(username);
         }
 
         [TestMethod]
         [ExpectedException(typeof(ConversationNotFoundException))]
         public async Task UpdateNonExistingConversation()
         {
-            await usersStore.UpdateConversation(Guid.NewGuid().ToString(), DateTime.Now);
+            await conversationsesStore.UpdateConversation(Guid.NewGuid().ToString(), DateTime.Now);
         }
 
         [TestMethod]
         public async Task ListConversationsNonExistingUser()
         {
-            var conversations = await usersStore.ListConversations(Guid.NewGuid().ToString());
+            var conversations = await conversationsesStore.ListConversations(Guid.NewGuid().ToString());
             Assert.AreEqual(0, conversations.Count());
         }
 
@@ -96,10 +96,10 @@ namespace ChatServiceTests
             var conversation1 = new Conversation(firstId,new string[]{userOne,userTwo}, DateTime.Now);
             var conversation2 = new Conversation(secondId, new string[] { userOne,userThree }, DateTime.Now.AddSeconds(1));
 
-            await usersStore.AddConversation(conversation1);
-            await usersStore.AddConversation(conversation2);
+            await conversationsesStore.AddConversation(conversation1);
+            await conversationsesStore.AddConversation(conversation2);
 
-            var conversations = await usersStore.ListConversations(userOne);
+            var conversations = await conversationsesStore.ListConversations(userOne);
             var enumerable = conversations.ToList();
             Assert.AreEqual(2, enumerable.Count());
             Assert.AreEqual(secondId, enumerable[0].Id);
@@ -117,10 +117,10 @@ namespace ChatServiceTests
             var userTwo = Guid.NewGuid().ToString();
 
             var conversation1 = new Conversation(firstId, new string[] { userOne,userTwo }, time1);
-            await usersStore.AddConversation(conversation1);
+            await conversationsesStore.AddConversation(conversation1);
 
-            await usersStore.UpdateConversation(firstId, time2);
-            var conversations = await usersStore.ListConversations(userOne);
+            await conversationsesStore.UpdateConversation(firstId, time2);
+            var conversations = await conversationsesStore.ListConversations(userOne);
 
             var retrievedDateTime = conversations.ElementAt(0).LastModifiedDateUtc;
             var retrievedRecipient = conversations.ElementAt(0).Participants.Except(new string[]{userOne}).First();

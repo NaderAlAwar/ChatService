@@ -11,10 +11,10 @@ namespace ChatServiceTests
 {
     [TestClass]
     [TestCategory("Integration")]
-    public class AzureTableUserStoreTests
+    public class AzureTableConversationsStoreTests
     {
         private Mock<ICloudTable> tableMock;
-        private AzureTableUserStore store;
+        private AzureTableConversationsStore store;
 
         private readonly Conversation testConversation = new Conversation("foo_bar", new []{"foo","bar"}, DateTime.Now);
 
@@ -22,7 +22,7 @@ namespace ChatServiceTests
         public void TestInitialize()
         {
             tableMock = new Mock<ICloudTable>();
-            store = new AzureTableUserStore(tableMock.Object);
+            store = new AzureTableConversationsStore(tableMock.Object);
 
 
 

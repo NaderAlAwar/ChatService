@@ -6,12 +6,12 @@ using Microsoft.WindowsAzure.Storage.Table;
 
 namespace ChatService.Storage.Azure
 {
-    public class AzureTableUserStore : IConversationsStore
+    public class AzureTableConversationsStore : IConversationsStore
     {
         private readonly ICloudTable table;
         private const string rowkeyTsPrefix = "ticks_";
 
-        public AzureTableUserStore(ICloudTable cloudTable)
+        public AzureTableConversationsStore(ICloudTable cloudTable)
         {
             table = cloudTable;
         }
