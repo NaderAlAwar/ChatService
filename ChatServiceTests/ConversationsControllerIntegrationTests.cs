@@ -41,27 +41,51 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task ListConversationsTest()
         {
+            var userOne = Guid.NewGuid().ToString();
+            var userTwo = Guid.NewGuid().ToString();
+            var userThree = Guid.NewGuid().ToString();
+
+
+            var createProfileDto1 = new CreateProfileDto
+            {
+                FirstName = userOne, LastName = userOne, Username = userOne
+            };
+
+            var createProfileDto2 = new CreateProfileDto
+            {
+                FirstName = userTwo, LastName = userTwo, Username = userTwo
+            };
+
+            var createProfileDto3 = new CreateProfileDto
+            {
+                FirstName = userThree, LastName = userThree, Username = userThree
+            };
+
+            await chatServiceClient.CreateProfile(createProfileDto1);
+            await chatServiceClient.CreateProfile(createProfileDto2);
+            await chatServiceClient.CreateProfile(createProfileDto3);
+
 
             var newConversationDto1 = new CreateConversationDto
             {
-                Participants = new[] { "user1", "user2" }
+                Participants = new[] { userOne, userTwo }
             };
 
             var newConversationDto2 = new CreateConversationDto
             {
-                Participants = new[] { "user1", "user3" }
+                Participants = new[] { userOne, userThree }
             };
 
             var conversation1 = await chatServiceClient.AddConversation(newConversationDto1);
             var conversation2 = await chatServiceClient.AddConversation(newConversationDto2);
 
-            var allConversations = await chatServiceClient.ListConversations("user1");
+            var allConversations = await chatServiceClient.ListConversations(userOne);
             string[] recipients =
                 {allConversations.Conversations[0].Recipient.Username, allConversations.Conversations[1].Recipient.Username};
-            CollectionAssert.AreEquivalent(new[] { "user2", "user3" }, recipients);
+            CollectionAssert.AreEquivalent(new[] { userTwo, userThree }, recipients);
             CollectionAssert.AreEquivalent(new[] { conversation1.Id, conversation2.Id }, new[] { allConversations.Conversations[0].Id, allConversations.Conversations[1].Id });
-            Assert.AreEqual("user3", allConversations.Conversations[0].Recipient.Username);
-            Assert.AreEqual("user2", allConversations.Conversations[1].Recipient.Username);
+            Assert.AreEqual(userThree, allConversations.Conversations[0].Recipient.Username);
+            Assert.AreEqual(userTwo, allConversations.Conversations[1].Recipient.Username);
         }
 
         [TestMethod]
@@ -83,7 +107,7 @@ namespace ChatServiceTests
             }
             catch (ChatServiceException e)
             {
-                Assert.AreEqual(HttpStatusCode.InternalServerError, e.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, e.StatusCode);
             }
         }
     }

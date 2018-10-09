@@ -43,10 +43,10 @@ namespace ChatService.Storage.Azure
             }
             foreach (var conversation in queryResult.Results)
             {
-                var newConversation = new Conversation(conversation.conversationId, new[] { username, conversation.recipient }, conversation.TicksToDateTime());
+                var newConversation = new Conversation(conversation.conversationId, new[] { username, conversation.recipient }, ticksToDateTime(conversation.RowKey));
                 result.Add(newConversation);
             }
-            result.Reverse();
+//            result.Reverse();
             return result;
         }
 
@@ -74,18 +74,19 @@ namespace ChatService.Storage.Azure
 
         private async Task<TableBatchOperation> AddEntitiesForUser(Conversation conversation, string userFrom, string userTo)
         {
+            string timeInTicks = datetimeToTicks(conversation.LastModifiedDateUtc);
             var idEntity = new UsersTableEntity
             {
                 PartitionKey = userFrom,
                 RowKey = conversation.Id,
-                dateTime = conversation.LastModifiedDateUtc.Ticks.ToString(),
+                dateTime = timeInTicks,
                 recipient = userTo
             };
 
             var tsEntity = new UsersTableEntity()
             {
                 PartitionKey = userFrom,
-                RowKey = rowkeyTsPrefix + conversation.LastModifiedDateUtc.Ticks.ToString(),
+                RowKey = timeInTicks,
                 conversationId = conversation.Id,
                 recipient = userTo
             };
@@ -98,12 +99,12 @@ namespace ChatService.Storage.Azure
 
         }
 
-        private async Task<TableBatchOperation> UpdateEntitiesForUser(UsersTableEntity entityToUpdate, string newTimeStamp)
+        private async Task<TableBatchOperation> UpdateEntitiesForUser(UsersTableEntity entityToUpdate, DateTime newTimeStamp)
         {
             var tableBatchOperation = new TableBatchOperation();
 
-            string oldTimeStamp = rowkeyTsPrefix + entityToUpdate.dateTime;
-            entityToUpdate.dateTime = newTimeStamp;
+            string oldTimeStamp = entityToUpdate.dateTime;
+            entityToUpdate.dateTime = datetimeToTicks(newTimeStamp);
             tableBatchOperation.Replace(entityToUpdate);
 
             var oldEntity = await retrieveEntity(entityToUpdate.PartitionKey, oldTimeStamp);
@@ -112,7 +113,7 @@ namespace ChatService.Storage.Azure
             var newEntity = new UsersTableEntity
             {
                 PartitionKey = entityToUpdate.PartitionKey,
-                RowKey = rowkeyTsPrefix + newTimeStamp,
+                RowKey = datetimeToTicks(newTimeStamp),
                 conversationId = entityToUpdate.RowKey,
                 recipient = entityToUpdate.recipient
             };
@@ -142,10 +143,9 @@ namespace ChatService.Storage.Azure
                 throw new StorageException("There should be exactly two entities");
             }
 
-            string newTimeStampInTicks = newTimeStamp.Ticks.ToString();
 
-            var firstTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[0], newTimeStampInTicks);
-            var secondTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[1], newTimeStampInTicks);
+            var firstTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[0], newTimeStamp);
+            var secondTableBatchOperation = await UpdateEntitiesForUser(conversations.Results[1], newTimeStamp);
 
             try
             {
@@ -204,6 +204,17 @@ namespace ChatService.Storage.Azure
                     throw new ArgumentNullException(nameof(participant) + " cannot be null");
                 }
             }
+        }
+
+        private string datetimeToTicks(DateTime datetime)
+        {
+            return rowkeyTsPrefix + string.Format("{0:D19}", DateTime.MaxValue.Ticks - datetime.Ticks);
+        }
+
+        private DateTime ticksToDateTime(string ticks)
+        {
+            ticks = ticks.Replace("ticks_", "");
+            return new DateTime(DateTime.MaxValue.Ticks - Convert.ToInt64(ticks));
         }
     }
 }

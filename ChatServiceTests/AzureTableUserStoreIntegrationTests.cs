@@ -118,16 +118,14 @@ namespace ChatServiceTests
 
             var conversation1 = new Conversation(firstId, new string[] { userOne,userTwo }, time1);
             await usersStore.AddConversation(conversation1);
-            var entity = await usersStore.retrieveEntity(userOne, "ticks_"+time1.Ticks.ToString());   // these will be deleted
-            Assert.AreEqual(firstId, entity.conversationId);
 
             await usersStore.UpdateConversation(firstId, time2);
+            var conversations = await usersStore.ListConversations(userOne);
 
-            var retrievedConversation = await usersStore.retrieveEntity(userOne, firstId);
-            var retrievedDateTime = retrievedConversation.TicksToDateTime();
-            Assert.AreEqual(time2.ToString(), retrievedDateTime.ToString());
-            Assert.AreEqual(userTwo, retrievedConversation.recipient);
-            Assert.AreEqual(firstId, retrievedConversation.conversationId);
+            var retrievedDateTime = conversations.ElementAt(0).LastModifiedDateUtc;
+            var retrievedRecipient = conversations.ElementAt(0).Participants.Except(new string[]{userOne}).First();
+            Assert.AreEqual(time2, retrievedDateTime);
+            Assert.AreEqual(userTwo, retrievedRecipient);
         }
 
     }
