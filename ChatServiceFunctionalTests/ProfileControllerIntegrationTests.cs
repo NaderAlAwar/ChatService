@@ -19,7 +19,7 @@ namespace ChatServiceTests
     /// on the document API).
     /// </summary>
     [TestClass]
-    [TestCategory("Integration")]
+    [TestCategory("Functional")]
     public class ProfileControllerIntegrationTests
     {
         private HttpClient httpClient;

@@ -21,7 +21,7 @@ using ChatService.Providers;
 namespace ChatServiceTests
 {
     [TestClass]
-    [TestCategory("Integration")]
+    [TestCategory("Functional")]
     public class MessageControllerIntegrationTests
     {
         private HttpClient httpClient;

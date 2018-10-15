@@ -11,7 +11,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace ChatServiceTests
 {
     [TestClass]
-    [TestCategory("Integration")]
+    [TestCategory("Functional")]
     public class ConversationsControllerIntegTests
     {
         private HttpClient httpClient;
