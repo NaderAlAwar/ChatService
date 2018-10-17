@@ -61,9 +61,9 @@ namespace ChatServiceTests
                 FirstName = userThree, LastName = userThree, Username = userThree
             };
 
-            await chatServiceClient.CreateProfile(createProfileDto1);
-            await chatServiceClient.CreateProfile(createProfileDto2);
-            await chatServiceClient.CreateProfile(createProfileDto3);
+            await Task.WhenAll(chatServiceClient.CreateProfile(createProfileDto1),
+                chatServiceClient.CreateProfile(createProfileDto2), chatServiceClient.CreateProfile(createProfileDto3));
+
 
 
             var newConversationDto1 = new CreateConversationDto
