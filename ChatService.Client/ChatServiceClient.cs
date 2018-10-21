@@ -5,7 +5,6 @@ using System.Net;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
-using ChatService.Storage;
 
 namespace ChatService.Client
 {
@@ -49,7 +48,7 @@ namespace ChatService.Client
             }
         }
 
-        public async Task<UserProfile> GetProfile(string username)
+        public async Task<UserInfoDto> GetProfile(string username)
         {
             try
             {
@@ -60,7 +59,7 @@ namespace ChatService.Client
                 }
 
                 string content = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<UserProfile>(content);
+                return JsonConvert.DeserializeObject<UserInfoDto>(content);
             }
             catch (JsonException e)
             {
@@ -77,7 +76,7 @@ namespace ChatService.Client
             }
         }
 
-        public async Task<Conversation> AddConversation(CreateConversationDto createConversationDto)
+        public async Task<ConversationDto> AddConversation(CreateConversationDto createConversationDto)
         {
             try
             {
@@ -91,7 +90,7 @@ namespace ChatService.Client
                 }
 
                 string content = await response.Content.ReadAsStringAsync();
-                return JsonConvert.DeserializeObject<Conversation>(content);
+                return JsonConvert.DeserializeObject<ConversationDto>(content);
             }
             catch (JsonException e)
             {

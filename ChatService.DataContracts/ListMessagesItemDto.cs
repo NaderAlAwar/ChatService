@@ -1,4 +1,5 @@
 ﻿using System;
+using Newtonsoft.Json;
 
 namespace ChatService.DataContracts
 {
@@ -14,5 +15,7 @@ namespace ChatService.DataContracts
         public string Text { get; }
         public string SenderUsername { get; }
         public DateTime UtcTime { get; }
+
+        [JsonIgnore] public DateTime LocalTime => UtcTime.ToLocalTime();
     }
 }

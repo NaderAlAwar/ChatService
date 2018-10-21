@@ -7,7 +7,7 @@ namespace ChatService
     {
         public static void Main(string[] args)
         {
-            WebServer.CreateWebHostBuilder().Build().Run();
+            new WebServer().Run();
         }
     }
     

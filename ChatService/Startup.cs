@@ -1,11 +1,13 @@
-﻿using ChatService.Storage;
+﻿using System;
+using ChatService.Storage;
 using ChatService.Storage.Azure;
-using ChatService.Storage.Memory;
+using ChatService.Storage.Metrics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService
 {
@@ -29,7 +31,22 @@ namespace ChatService
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
             services.AddSingleton<IProfileStore>(profileStore);
 
-            services.AddSingleton<IConversationsStore, InMemoryConversationStore>();
+            AzureCloudTable messagesCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
+            AzureTableMessagesStore messagesStore = new AzureTableMessagesStore(messagesCloudTable);
+            services.AddSingleton<IMessagesStore>(messagesStore);
+
+
+            services.AddSingleton<IMetricsClient>(context =>
+            {
+                var metricsClientFactory = new MetricsClientFactory(context.GetRequiredService<ILoggerFactory>(),
+                    TimeSpan.FromSeconds(15));
+                return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
+            });
+
+            AzureCloudTable conversationsCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
+            AzureTableConversationsStore conversationsStore = new AzureTableConversationsStore(conversationsCloudTable, messagesStore);
+            services.AddSingleton<IConversationsStore>(context => 
+                new ConversationStoreMetricsDecorator(conversationsStore, context.GetRequiredService<IMetricsClient>()));
 
             services.AddLogging();
             services.AddMvc();
@@ -49,8 +66,9 @@ namespace ChatService
             if (env.IsDevelopment())
             {
                 app.UseDeveloperExceptionPage();
-                loggerFactory.AddConsole();
-                loggerFactory.AddDebug();
+
+                loggerFactory.AddConsole(); // add console log provider
+                loggerFactory.AddDebug(); // add debug log provider
             }
 
             app.UseMvc();
