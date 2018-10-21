@@ -2,7 +2,6 @@
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
-using ChatServiceTests.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Microsoft.WindowsAzure.Storage;
 using Microsoft.WindowsAzure.Storage.Table;
@@ -11,7 +10,7 @@ using Moq;
 namespace ChatServiceTests
 {
     [TestClass]
-    [TestCategory("Integration")]
+    [TestCategory("UnitTests")]
     public class AzureTableProfileStoreTests
     {
         private Mock<ICloudTable> tableMock;
@@ -27,6 +26,27 @@ namespace ChatServiceTests
 
             tableMock.Setup(m => m.ExecuteAsync(It.IsAny<TableOperation>()))
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 503 }, "Storage is down", null));
+        }
+
+        [DataRow("", "Nehme", "Bilal")]
+        [DataRow(null, "Nehme", "Bilal")]
+        [DataRow("nbilal", "", "Bilal")]
+        [DataRow("nbilal", null, "Bilal")]
+        [DataRow("nbilal", "Nehme", "")]
+        [DataRow("nbilal", "Nehme", null)]
+        [TestMethod]
+        public async Task AddInvalidProfile(string username, string firstName, string lastName)
+        {
+            try
+            {
+                var profile = new UserProfile(username, firstName, lastName);
+                await store.AddProfile(profile);
+
+                Assert.Fail($"Expected {nameof(ArgumentException)} was not thrown");
+            }
+            catch (ArgumentException)
+            {
+            }
         }
 
         [TestMethod]
