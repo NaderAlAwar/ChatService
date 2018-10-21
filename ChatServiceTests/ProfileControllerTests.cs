@@ -7,7 +7,6 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
-using ChatServiceTests.Utils;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ChatServiceTests

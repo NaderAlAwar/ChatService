@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 
 namespace ChatService.Storage
 {
@@ -14,5 +15,23 @@ namespace ChatService.Storage
         public string Id { get; }
         public string[] Participants { get; }
         public DateTime LastModifiedDateUtc { get; }
+
+        public override bool Equals(object obj)
+        {
+            var conversation = obj as Conversation;
+            return conversation != null &&
+                   Id == conversation.Id &&
+                   string.Join(",", Participants) == string.Join(",", conversation.Participants) &&
+                   LastModifiedDateUtc == conversation.LastModifiedDateUtc;
+        }
+
+        public override int GetHashCode()
+        {
+            var hashCode = 333940031;
+            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
+            hashCode = hashCode * -1521134295 + EqualityComparer<string[]>.Default.GetHashCode(Participants);
+            hashCode = hashCode * -1521134295 + LastModifiedDateUtc.GetHashCode();
+            return hashCode;
+        }
     }
 }

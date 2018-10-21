@@ -2,11 +2,11 @@
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
-using ChatServiceTests.Utils;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceTests
 {
+
     [TestClass]
     [TestCategory("Integration")]
     public class AzureTableProfileStoreIntegrationTests
@@ -36,10 +36,9 @@ namespace ChatServiceTests
         {
             emulator = new AzureStorageEmulatorProxy();
             emulator.StartEmulator();
-            var table = new AzureCloudTable(connectionString, "TestTable");
+            var table = new AzureCloudTable(connectionString, "ProfileTable");
             await table.CreateIfNotExistsAsync();
             store = new AzureTableProfileStore(table);
-            
         }
 
         [TestCleanup]
@@ -76,27 +75,6 @@ namespace ChatServiceTests
         {
             await store.AddProfile(testProfile);
             await store.AddProfile(testProfile);
-        }
-
-        [DataRow("", "Nehme", "Bilal")]
-        [DataRow(null, "Nehme", "Bilal")]
-        [DataRow("nbilal", "", "Bilal")]
-        [DataRow("nbilal", null, "Bilal")]
-        [DataRow("nbilal", "Nehme", "")]
-        [DataRow("nbilal", "Nehme", null)]
-        [TestMethod]
-        public async Task AddInvalidProfile(string username, string firstName, string lastName)
-        {
-            try
-            {
-                var profile = new UserProfile(username, firstName, lastName);
-                await store.AddProfile(profile);
-
-                Assert.Fail($"Expected {nameof(ArgumentException)} was not thrown");
-            }
-            catch (ArgumentException)
-            {
-            }
         }
 
         [TestMethod]

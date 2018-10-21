@@ -33,6 +33,7 @@ namespace ChatService.Controllers
             catch (StorageErrorException e)
             {
                 logger.LogError(Events.StorageError, e, "Failed to create a profile for user {username}", request.Username);
+
                 return StatusCode(503, "Failed to reach storage");
             }
             catch (DuplicateProfileException)
@@ -66,7 +67,7 @@ namespace ChatService.Controllers
             {
                 logger.LogInformation(Events.ProfileNotFound,
                     "A profile was request for user {username} but was not found", username);
-                return NotFound();
+                return NotFound($"Profile for user {username} was not found");
             }
             catch (StorageErrorException e)
             {

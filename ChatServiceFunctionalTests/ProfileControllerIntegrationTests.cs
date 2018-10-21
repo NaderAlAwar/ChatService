@@ -1,16 +1,11 @@
 ﻿using System;
 using System.Net;
-using System.Net.Http;
 using System.Threading.Tasks;
-using ChatService;
 using ChatService.Client;
 using ChatService.DataContracts;
-using ChatService.Storage;
-using ChatServiceTests.Utils;
-using Microsoft.AspNetCore.TestHost;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
-namespace ChatServiceTests
+namespace ChatServiceFunctionalTests
 {
     /// <summary>
     /// The integration tests are used to validate the full API execution end-to-end.
@@ -20,18 +15,15 @@ namespace ChatServiceTests
     /// </summary>
     [TestClass]
     [TestCategory("Integration")]
+    [TestCategory("Functional")]
     public class ProfileControllerIntegrationTests
     {
-        private HttpClient httpClient;
-        private TestServer server;
         private ChatServiceClient chatServiceClient;
 
         [TestInitialize]
         public void TestInitialize()
         {
-            server = new TestServer(WebServer.CreateWebHostBuilder());
-            httpClient = server.CreateClient();
-            chatServiceClient = new ChatServiceClient(httpClient);
+            chatServiceClient = TestUtils.CreateTestServerAndClient();
         }
 
         [TestMethod]

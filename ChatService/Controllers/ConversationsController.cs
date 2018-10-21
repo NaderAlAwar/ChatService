@@ -35,12 +35,18 @@ namespace ChatService.Controllers
                 var conversationList = new List<ListConversationsItemDto>();
                 foreach (var conversation in conversations)
                 {
-                    string recipientUserName = conversation.Participants.Except(new[] { username }).First();
+                    string recipientUserName = conversation.Participants.Except(new[] {username}).First();
                     UserProfile profile = await profileStore.GetProfile(recipientUserName);
                     var recipientInfo = new UserInfoDto(profile.Username, profile.FirstName, profile.LastName);
-                    conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo, conversation.LastModifiedDateUtc));
+                    conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo,
+                        conversation.LastModifiedDateUtc));
                 }
+
                 return Ok(new ListConversationsDto(conversationList));
+            }
+            catch (ProfileNotFoundException)
+            {
+                return NotFound($"Profile for user {username} was not found");
             }
             catch (StorageErrorException e)
             {

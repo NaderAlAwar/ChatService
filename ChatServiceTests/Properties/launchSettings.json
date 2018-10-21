@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "ChatServiceTests": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "ChatServiceUri": "http://chatservicetest.azurewebsites.net"
+      }
+    }
+  }
+}

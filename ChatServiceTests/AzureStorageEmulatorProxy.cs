@@ -32,7 +32,7 @@ namespace ChatServiceTests
             ExecuteCommandOnEmulator("clear all");
         }
 
-        private void ExecuteCommandOnEmulator(string arguments)
+        private void ExecuteCommandOnEmulator(string arguments) 
         {
             ProcessStartInfo start = new ProcessStartInfo
             {

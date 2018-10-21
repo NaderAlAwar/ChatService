@@ -44,7 +44,7 @@ namespace ChatService.Storage.Azure
             }
             catch (StorageException e)
             {
-                if (e.RequestInformation.HttpStatusCode == 409) // not found
+                if (e.RequestInformation.HttpStatusCode == 409) // conflict
                 {
                     throw new DuplicateProfileException($"Profile for user {profile.Username} already exists");
                 }
