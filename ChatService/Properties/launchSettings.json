@@ -2,6 +2,7 @@
   "profiles": {
     "ChatService": {
       "commandName": "Project",
+      "workingDirectory": "$(outdir)",
       "environmentVariables": {
         "ASPNETCORE_ENVIRONMENT": "Development"
       },

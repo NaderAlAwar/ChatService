@@ -2,6 +2,7 @@
 
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
+    <UserSecretsId>83e7544e-d0e2-423e-9e61-8b88be4c2b1f</UserSecretsId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -14,6 +15,7 @@
     <PackageReference Include="Microsoft.Diagnostics.EventFlow.Inputs.MicrosoftLogging" Version="1.4.0" />
     <PackageReference Include="Microsoft.Diagnostics.EventFlow.Outputs.ApplicationInsights" Version="1.4.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.1" />
+    <PackageReference Include="MicrosoftLogging.Metrics" Version="1.0.0" />
   </ItemGroup>
 
   <ItemGroup>
@@ -22,6 +24,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\ChatService.Common\ChatService.Common.csproj" />
+    <ProjectReference Include="..\ChatService.DataContracts\ChatService.DataContracts.csproj" />
   </ItemGroup>
 
   <Import Project="..\ChatService.Configuration\ChatService.Configuration.projitems" Label="Shared" />
