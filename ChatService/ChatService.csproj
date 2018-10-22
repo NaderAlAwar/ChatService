@@ -3,6 +3,8 @@
   <PropertyGroup>
     <TargetFramework>netcoreapp2.1</TargetFramework>
     <UserSecretsId>83e7544e-d0e2-423e-9e61-8b88be4c2b1f</UserSecretsId>
+    <ApplicationInsightsResourceId>/subscriptions/89470aec-c0c1-4e8c-bce3-10862cec8323/resourcegroups/ChatService503/providers/microsoft.insights/components/ChatserviceAppInsights</ApplicationInsightsResourceId>
+    <ApplicationInsightsAnnotationResourceId>/subscriptions/89470aec-c0c1-4e8c-bce3-10862cec8323/resourcegroups/ChatService503/providers/microsoft.insights/components/ChatserviceAppInsights</ApplicationInsightsAnnotationResourceId>
   </PropertyGroup>
 
   <ItemGroup>
@@ -25,6 +27,10 @@
   <ItemGroup>
     <ProjectReference Include="..\ChatService.Common\ChatService.Common.csproj" />
     <ProjectReference Include="..\ChatService.DataContracts\ChatService.DataContracts.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <WCFMetadata Include="Connected Services" />
   </ItemGroup>
 
   <Import Project="..\ChatService.Configuration\ChatService.Configuration.projitems" Label="Shared" />
