@@ -27,21 +27,22 @@ namespace ChatService
 
             AzureStorageSettings azureStorageSettings = GetStorageSettings();
 
-            AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
-            AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
-            services.AddSingleton<IProfileStore>(profileStore);
-
-            AzureCloudTable messagesCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
-            AzureTableMessagesStore messagesStore = new AzureTableMessagesStore(messagesCloudTable);
-            services.AddSingleton<IMessagesStore>(messagesStore);
-
-
             services.AddSingleton<IMetricsClient>(context =>
             {
                 var metricsClientFactory = new MetricsClientFactory(context.GetRequiredService<ILoggerFactory>(),
                     TimeSpan.FromSeconds(15));
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
+
+            AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
+            AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
+            services.AddSingleton<IProfileStore>(context => 
+                new ProfileStoreMetricsDecorator(profileStore, context.GetRequiredService<IMetricsClient>()));
+
+            AzureCloudTable messagesCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
+            AzureTableMessagesStore messagesStore = new AzureTableMessagesStore(messagesCloudTable);
+            services.AddSingleton<IMessagesStore>(context => 
+                new MessagesStoreMetricsDecorator(messagesStore, context.GetRequiredService<IMetricsClient>()));
 
             AzureCloudTable conversationsCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
             AzureTableConversationsStore conversationsStore = new AzureTableConversationsStore(conversationsCloudTable, messagesStore);
