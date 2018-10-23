@@ -16,8 +16,8 @@ namespace ChatService.Storage.Metrics
         {
             this.store = store;
 
-            addMessageMetric = metricsClient.CreateAggregateMetric("AddMessagesTime");
-            listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesTime");
+            addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageToMessageStoreTime");
+            listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesFromMessageStoreTime");
         }
 
         public Task AddMessage(string conversationId, Message message)
