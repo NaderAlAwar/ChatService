@@ -7,6 +7,7 @@ using ChatService.Logging;
 using ChatService.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService.Controllers
 {
@@ -16,18 +17,21 @@ namespace ChatService.Controllers
         private readonly IConversationsStore conversationsStore;
         private readonly IProfileStore profileStore;
         private readonly ILogger<ConversationsController> logger;
+        private readonly IMetricsClient metricsClient;
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
             this.logger = logger;
+            this.metricsClient = metricsClient;
         }
 
         [HttpGet("{username}")]
         public async Task<IActionResult> ListConversations(string username)
         {
+            var timer = metricsClient.StartTimer();
             try
             {
                 var conversations = await conversationsStore.ListConversations(username);
@@ -41,7 +45,7 @@ namespace ChatService.Controllers
                     conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo,
                         conversation.LastModifiedDateUtc));
                 }
-
+                timer.TrackElapsed("ListConversationsControllerTime");
                 return Ok(new ListConversationsDto(conversationList));
             }
             catch (ProfileNotFoundException)
@@ -63,6 +67,7 @@ namespace ChatService.Controllers
         [HttpPost()]
         public async Task<IActionResult> CreateConversation([FromBody] CreateConversationDto conversationDto)
         {
+            var timer = metricsClient.StartTimer();
             try
             {
                 string id = GenerateConversationId(conversationDto);
@@ -70,6 +75,7 @@ namespace ChatService.Controllers
                 await conversationsStore.AddConversation(conversation);
 
                 logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
+                timer.TrackElapsed("CreateConversationControllerTime");
                 return Ok(conversation);
             }
             catch (StorageErrorException e)
