@@ -15,24 +15,31 @@ namespace ChatService.Controllers
         private readonly IProfileStore profileStore;
         private readonly ILogger<ProfileController> logger;
         private readonly IMetricsClient metricsClient;
+        private readonly AggregateMetric getProfileControllerTimeMetric;
+        private readonly AggregateMetric createProfileControllerTimeMetric;
 
         public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient)
         {
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
+            getProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("GetProfileControllerTime");
+            createProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateProfileControllerTime");
         }
 
         [HttpPost("")]
         public async Task<IActionResult> CreateProfile([FromBody] CreateProfileDto request)
         {
-            var timer = metricsClient.StartTimer();
             var profile = new UserProfile(request.Username, request.FirstName, request.LastName);
             try
             {
-                await profileStore.AddProfile(profile);
-                logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
-                    request.Username);
+                return await createProfileControllerTimeMetric.TrackTime(async () =>
+                {
+                    await profileStore.AddProfile(profile);
+                    logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
+                        request.Username);
+                    return Created(request.Username, profile);
+                });
             }
             catch (StorageErrorException e)
             {
@@ -56,19 +63,18 @@ namespace ChatService.Controllers
                 logger.LogError(Events.InternalError, e, "Failed to create a profile for user {username}", request.Username);
                 return StatusCode(500, "Failed to create profile");
             }
-            timer.TrackElapsed("CreateProfileControllerTime");
-            return Created(request.Username, profile);
         }
 
         [HttpGet("{username}")]
         public async Task<IActionResult> GetProfile(string username)
         {
-            var timer = metricsClient.StartTimer();
             try
             {
-                UserProfile profile = await profileStore.GetProfile(username);
-                timer.TrackElapsed("GetProfileControllerTime");
-                return Ok(profile);
+                return await getProfileControllerTimeMetric.TrackTime(async () =>
+                {
+                    UserProfile profile = await profileStore.GetProfile(username);
+                    return Ok(profile);
+                });
             }
             catch (ProfileNotFoundException)
             {
