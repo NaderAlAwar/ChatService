@@ -1,31 +1,23 @@
-﻿using System.Collections.Generic;
-using System.Diagnostics;
+﻿using Microsoft.Extensions.Logging.Metrics;
+using System;
+using System.Collections.Generic;
+using System.Text;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService.Storage.Metrics
 {
-    public class ConversationStoreMetricsDecorator : IConversationsStore
+    public class MessagesStoreMetricsDecorator : IMessagesStore
     {
-        private readonly IConversationsStore store;
-        private readonly AggregateMetric listMessagesMetric;
+        private readonly IMessagesStore store;
         private readonly AggregateMetric addMessageMetric;
-        private readonly AggregateMetric addConversationMetric;
-        private readonly AggregateMetric listConversationsMetric;
+        private readonly AggregateMetric listMessagesMetric;
 
-        public ConversationStoreMetricsDecorator(IConversationsStore store, IMetricsClient metricsClient)
+        public MessagesStoreMetricsDecorator(IMessagesStore store, IMetricsClient metricsClient)
         {
             this.store = store;
 
-            listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesTime");
-            addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageTime");
-            listConversationsMetric = metricsClient.CreateAggregateMetric("ListConversationsTime");
-            addConversationMetric = metricsClient.CreateAggregateMetric("AddConversationTime");
-        }
-
-        public Task<IEnumerable<Message>> ListMessages(string conversationId)
-        {
-            return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId));
+            addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageToMessageStoreTime");
+            listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesFromMessageStoreTime");
         }
 
         public Task AddMessage(string conversationId, Message message)
@@ -33,14 +25,9 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
         }
 
-        public Task<IEnumerable<Conversation>> ListConversations(string username)
+        public Task<IEnumerable<Message>> ListMessages(string conversationId)
         {
-            return listConversationsMetric.TrackTime(() => store.ListConversations(username));
-        }
-
-        public Task AddConversation(Conversation conversation)
-        {
-            return addConversationMetric.TrackTime(() => store.AddConversation(conversation));
+            return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId));
         }
     }
 }

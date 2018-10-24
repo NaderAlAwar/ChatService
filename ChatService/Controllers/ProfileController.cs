@@ -5,6 +5,7 @@ using ChatService.Logging;
 using ChatService.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService.Controllers
 {
@@ -13,11 +14,17 @@ namespace ChatService.Controllers
     {
         private readonly IProfileStore profileStore;
         private readonly ILogger<ProfileController> logger;
+        private readonly IMetricsClient metricsClient;
+        private readonly AggregateMetric getProfileControllerTimeMetric;
+        private readonly AggregateMetric createProfileControllerTimeMetric;
 
-        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger)
+        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient)
         {
             this.profileStore = profileStore;
             this.logger = logger;
+            this.metricsClient = metricsClient;
+            getProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("GetProfileControllerTime");
+            createProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateProfileControllerTime");
         }
 
         [HttpPost("")]
@@ -26,9 +33,13 @@ namespace ChatService.Controllers
             var profile = new UserProfile(request.Username, request.FirstName, request.LastName);
             try
             {
-                await profileStore.AddProfile(profile);
-                logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
-                    request.Username);
+                return await createProfileControllerTimeMetric.TrackTime(async () =>
+                {
+                    await profileStore.AddProfile(profile);
+                    logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
+                        request.Username);
+                    return Created(request.Username, profile);
+                });
             }
             catch (StorageErrorException e)
             {
@@ -52,7 +63,6 @@ namespace ChatService.Controllers
                 logger.LogError(Events.InternalError, e, "Failed to create a profile for user {username}", request.Username);
                 return StatusCode(500, "Failed to create profile");
             }
-            return Created(request.Username, profile);
         }
 
         [HttpGet("{username}")]
@@ -60,8 +70,11 @@ namespace ChatService.Controllers
         {
             try
             {
-                UserProfile profile = await profileStore.GetProfile(username);
-                return Ok(profile);
+                return await getProfileControllerTimeMetric.TrackTime(async () =>
+                {
+                    UserProfile profile = await profileStore.GetProfile(username);
+                    return Ok(profile);
+                });
             }
             catch (ProfileNotFoundException)
             {
