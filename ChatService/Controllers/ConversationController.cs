@@ -17,27 +17,32 @@ namespace ChatService.Controllers
         private readonly IConversationsStore conversationsStore;
         private readonly ILogger<ConversationController> logger;
         private readonly IMetricsClient metricsClient;
+        private readonly AggregateMetric postMessageControllerTimeMetric;
+        private readonly AggregateMetric listMessagesControllerTimeMetric;
 
         public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient)
         {
             this.conversationsStore = conversationsStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
+            listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
+            postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
 
         //TODO: add paging
         [HttpGet("{conversationId}")]
         public async Task<IActionResult> ListMessages(string conversationId)
         {
-            var timer = metricsClient.StartTimer();
             try
             {
-                IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId);
-                IEnumerable<ListMessagesItemDto> dtos =
-                    messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime));
+                return await listMessagesControllerTimeMetric.TrackTime(async () =>
+                {
+                    IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId);
+                    IEnumerable<ListMessagesItemDto> dtos =
+                        messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime));
 
-                timer.TrackElapsed("ListMessagesControllerTime");
-                return Ok(new ListMessagesDto(dtos));
+                    return Ok(new ListMessagesDto(dtos));
+                });
             }
             catch (StorageErrorException e)
             {
@@ -56,16 +61,17 @@ namespace ChatService.Controllers
         [HttpPost("{id}")]
         public async Task<IActionResult> PostMessage(string id, [FromBody] SendMessageDto messageDto)
         {
-            var timer = metricsClient.StartTimer();
             try
             {
-                var message = new Message(messageDto.Text, messageDto.SenderUsername, DateTime.UtcNow);
-                await conversationsStore.AddMessage(id, message);
+                return await postMessageControllerTimeMetric.TrackTime(async () =>
+                {
+                    var message = new Message(messageDto.Text, messageDto.SenderUsername, DateTime.UtcNow);
+                    await conversationsStore.AddMessage(id, message);
 
-                logger.LogInformation(Events.ConversationMessageAdded, 
-                    "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
-                timer.TrackElapsed("PostMessageControllerTime");
-                return Ok(message);
+                    logger.LogInformation(Events.ConversationMessageAdded,
+                        "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
+                    return Ok(message);
+                });
             }
             catch (StorageErrorException e)
             {
