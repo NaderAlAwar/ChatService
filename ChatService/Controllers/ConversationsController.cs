@@ -7,6 +7,7 @@ using ChatService.Logging;
 using ChatService.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService.Controllers
 {
@@ -16,13 +17,19 @@ namespace ChatService.Controllers
         private readonly IConversationsStore conversationsStore;
         private readonly IProfileStore profileStore;
         private readonly ILogger<ConversationsController> logger;
+        private readonly IMetricsClient metricsClient;
+        private readonly AggregateMetric listConversationsControllerTimeMetric;
+        private readonly AggregateMetric createConversationControllerTimeMetric;
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
             this.logger = logger;
+            this.metricsClient = metricsClient;
+            listConversationsControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListConversationsControllerTime");
+            createConversationControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateConversationControllerTime");
         }
 
         [HttpGet("{username}")]
@@ -30,19 +37,21 @@ namespace ChatService.Controllers
         {
             try
             {
-                var conversations = await conversationsStore.ListConversations(username);
-
-                var conversationList = new List<ListConversationsItemDto>();
-                foreach (var conversation in conversations)
+                return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
-                    string recipientUserName = conversation.Participants.Except(new[] {username}).First();
-                    UserProfile profile = await profileStore.GetProfile(recipientUserName);
-                    var recipientInfo = new UserInfoDto(profile.Username, profile.FirstName, profile.LastName);
-                    conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo,
-                        conversation.LastModifiedDateUtc));
-                }
+                    var conversations = await conversationsStore.ListConversations(username);
 
-                return Ok(new ListConversationsDto(conversationList));
+                    var conversationList = new List<ListConversationsItemDto>();
+                    foreach (var conversation in conversations)
+                    {
+                        string recipientUserName = conversation.Participants.Except(new[] { username }).First();
+                        UserProfile profile = await profileStore.GetProfile(recipientUserName);
+                        var recipientInfo = new UserInfoDto(profile.Username, profile.FirstName, profile.LastName);
+                        conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo,
+                            conversation.LastModifiedDateUtc));
+                    }
+                    return Ok(new ListConversationsDto(conversationList));
+                });
             }
             catch (ProfileNotFoundException)
             {
@@ -65,12 +74,15 @@ namespace ChatService.Controllers
         {
             try
             {
-                string id = GenerateConversationId(conversationDto);
-                Conversation conversation = new Conversation(id, conversationDto.Participants, DateTime.UtcNow);
-                await conversationsStore.AddConversation(conversation);
+                return await createConversationControllerTimeMetric.TrackTime(async () =>
+                {
+                    string id = GenerateConversationId(conversationDto);
+                    Conversation conversation = new Conversation(id, conversationDto.Participants, DateTime.UtcNow);
+                    await conversationsStore.AddConversation(conversation);
 
-                logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
-                return Ok(conversation);
+                    logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
+                    return Ok(conversation);
+                });
             }
             catch (StorageErrorException e)
             {

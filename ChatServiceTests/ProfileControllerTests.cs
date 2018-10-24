@@ -8,6 +8,7 @@ using Moq;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatServiceTests
 {
@@ -21,6 +22,8 @@ namespace ChatServiceTests
     {
         readonly Mock<IProfileStore> profileStoreMock = new Mock<IProfileStore>();
         readonly Mock<ILogger<ProfileController>> loggerMock = new Mock<ILogger<ProfileController>>();
+        readonly Mock<IMetricsClient> metricsMock = new Mock<IMetricsClient>();
+
         private CreateProfileDto createProfileDto = new CreateProfileDto
         {
             Username = "nbilal",
@@ -29,16 +32,16 @@ namespace ChatServiceTests
         };
 
         [TestMethod]
-        public async Task AddProfileReturns503WhenStorageIsUnavailable()
+        public async Task AddProfileReturns500WhenStorageIsUnavailable()
         {
             profileStoreMock.Setup(store => store.AddProfile(It.IsAny<UserProfile>()))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
-            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object);
+            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object, metricsMock.Object);
             IActionResult result = await profileController.CreateProfile(
                 createProfileDto);
 
-            TestUtils.AssertStatusCode(HttpStatusCode.ServiceUnavailable, result);
+            TestUtils.AssertStatusCode(HttpStatusCode.InternalServerError, result);
         }
 
         [TestMethod]
@@ -47,23 +50,23 @@ namespace ChatServiceTests
             profileStoreMock.Setup(store => store.AddProfile(It.IsAny<UserProfile>()))
                 .ThrowsAsync(new UnknownException());
 
-            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object);
+            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object, metricsMock.Object);
             IActionResult result = await profileController.CreateProfile(createProfileDto);
 
             TestUtils.AssertStatusCode(HttpStatusCode.InternalServerError, result);
         }
 
         [TestMethod]
-        public async Task GetProfileReturns503WhenStorageIsUnavailable()
+        public async Task GetProfileReturns500WhenStorageIsUnavailable()
         {
             const string username = "username";
             profileStoreMock.Setup(store => store.GetProfile(username))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
-            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object);
+            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object, metricsMock.Object);
             IActionResult result = await profileController.GetProfile(username);
 
-            TestUtils.AssertStatusCode(HttpStatusCode.ServiceUnavailable, result);
+            TestUtils.AssertStatusCode(HttpStatusCode.InternalServerError, result);
         }
 
         [TestMethod]
@@ -73,7 +76,7 @@ namespace ChatServiceTests
             profileStoreMock.Setup(store => store.GetProfile(username))
                 .ThrowsAsync(new UnknownException());
 
-            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object);
+            var profileController = new ProfileController(profileStoreMock.Object, loggerMock.Object, metricsMock.Object);
             IActionResult result = await profileController.GetProfile(username);
 
             TestUtils.AssertStatusCode(HttpStatusCode.InternalServerError, result);
