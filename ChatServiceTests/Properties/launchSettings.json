@@ -2,6 +2,7 @@
   "profiles": {
     "ChatServiceTests": {
       "commandName": "Project",
+      "workingDirectory": "$(outdir)",
       "environmentVariables": {
         "ChatServiceUri": "http://chatservicetest.azurewebsites.net"
       }

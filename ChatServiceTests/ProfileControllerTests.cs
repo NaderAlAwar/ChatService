@@ -9,6 +9,7 @@ using System.Threading.Tasks;
 using ChatService.DataContracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Metrics;
+using ChatServiceTests.Utils;
 
 namespace ChatServiceTests
 {

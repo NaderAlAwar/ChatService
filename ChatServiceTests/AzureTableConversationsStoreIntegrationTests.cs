@@ -4,6 +4,8 @@ using System.Linq;
 using System.Threading.Tasks;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
+using ChatServiceTests.Utils;
+using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceTests
@@ -13,35 +15,29 @@ namespace ChatServiceTests
     [TestCategory("Integration")]
     public class AzureTableConversationsStoreIntegrationTests
     {
-        private const string connectionString = "UseDevelopmentStorage=true";
-        private static AzureStorageEmulatorProxy emulator;
         private AzureTableConversationsStore store;
+        private static string ConnectionString { get; set; }
+        private static AzureStorageSettings azureStorageSettings;
 
 
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            emulator.ClearAll();
-        }
-
-        [ClassCleanup]
-        public static void ClassCleanup()
-        {
-            emulator.StopEmulator();
+            IConfiguration configuration = TestUtils.InitConfiguration();
+            IConfiguration storageConfiguration = configuration.GetSection(nameof(AzureStorageSettings));
+            AzureStorageSettings azureStorageSettings = new AzureStorageSettings();
+            storageConfiguration.Bind(azureStorageSettings);
+            ConnectionString = azureStorageSettings.ConnectionString;
         }
 
         [TestInitialize]
         public async Task TestInitialize()
         {
-            emulator = new AzureStorageEmulatorProxy();
-            emulator.StartEmulator();
-            var messagesTable = new AzureCloudTable(connectionString, "MessagesTable");
+            var messagesTable = new AzureCloudTable(ConnectionString, "MessagesTable");
             await messagesTable.CreateIfNotExistsAsync();
             var messageStore = new AzureTableMessagesStore(messagesTable);
 
-            var conversationsTable = new AzureCloudTable(connectionString, "ConversationsTable");
+            var conversationsTable = new AzureCloudTable(ConnectionString, "ConversationsTable");
             await conversationsTable.CreateIfNotExistsAsync();
             store = new AzureTableConversationsStore(conversationsTable, messageStore);
         }
@@ -127,7 +123,7 @@ namespace ChatServiceTests
                 await store.AddConversation(conversation);
             }
 
-            var userBConversations = (await store.ListConversations(userB)).ToList();
+            var userBConversations = (await store.ListConversations(userB, "", "", 50)).ToList();
             Assert.AreEqual(2, userBConversations.Count());
             Assert.AreEqual(conversations[2], userBConversations[0]);
             Assert.AreEqual(conversations[0], userBConversations[1]);
@@ -158,15 +154,55 @@ namespace ChatServiceTests
             Message message = new Message("bla bla", userA, dateTime.AddSeconds(4));
             await store.AddMessage(conversations[0].Id, message);
 
-            var userAConversations = (await store.ListConversations(userA)).ToList();
+            var userAConversations = (await store.ListConversations(userA, "", "", 50)).ToList();
             Assert.AreEqual(3, userAConversations.Count());
             Assert.AreEqual(conversations[0].Id, userAConversations[0].Id);
             Assert.AreEqual(message.UtcTime, userAConversations[0].LastModifiedDateUtc);
 
-            var userBConversations = (await store.ListConversations(userB)).ToList();
+            var userBConversations = (await store.ListConversations(userB, "", "", 50)).ToList();
             Assert.AreEqual(2, userBConversations.Count());
             Assert.AreEqual(conversations[0].Id, userBConversations[0].Id);
             Assert.AreEqual(message.UtcTime, userBConversations[0].LastModifiedDateUtc);
+        }
+
+        [TestMethod]
+
+        public async Task ConversationsPagingShouldReturnCorrectAmountStartingFromStriclyGreaterThanGivenDate()
+        {
+            string userA = RandomString();
+            string userB = RandomString();
+            string userC = RandomString();
+            string userD = RandomString();
+
+            var dateTime = DateTime.UtcNow;
+
+            var conversations = new[]
+            {
+                new Conversation(RandomString(), new [] { userA, userB }, dateTime.AddSeconds(1)),
+                new Conversation(RandomString(), new [] { userA, userC }, dateTime.AddSeconds(2)),
+                new Conversation(RandomString(), new [] { userA, userD }, dateTime.AddSeconds(3)),
+            };
+
+            foreach (Conversation conversation in conversations)
+            {
+                await store.AddConversation(conversation);
+            }
+
+            List<Conversation> userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), "", 2)).ToList();
+            Assert.AreEqual(2, userAConversations.Count);
+            Assert.AreEqual(userD, userAConversations[0].Participants[1]);
+            Assert.AreEqual(userC, userAConversations[1].Participants[1]);
+
+            userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), "", 2)).ToList();
+            Assert.AreEqual(0, userAConversations.Count);
+
+            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), 2)).ToList();
+            Assert.AreEqual(2, userAConversations.Count);
+            Assert.AreEqual(userC, userAConversations[0].Participants[1]);
+            Assert.AreEqual(userB, userAConversations[1].Participants[1]);
+
+            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), 2)).ToList();
+            Assert.AreEqual(0, userAConversations.Count);
         }
     }
 }
