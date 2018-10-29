@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Logging;
 using ChatService.Storage;
+using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
@@ -33,13 +34,13 @@ namespace ChatService.Controllers
         }
 
         [HttpGet("{username}")]
-        public async Task<IActionResult> ListConversations(string username)
+        public async Task<IActionResult> ListConversations(string username, [FromQuery] string startCt, [FromQuery] string endCt, [FromQuery] int limit)
         {
             try
             {
                 return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
-                    var conversations = await conversationsStore.ListConversations(username);
+                    var conversations = await conversationsStore.ListConversations(username, startCt, endCt, limit);
 
                     var conversationList = new List<ListConversationsItemDto>();
                     foreach (var conversation in conversations)
@@ -50,7 +51,16 @@ namespace ChatService.Controllers
                         conversationList.Add(new ListConversationsItemDto(conversation.Id, recipientInfo,
                             conversation.LastModifiedDateUtc));
                     }
-                    return Ok(new ListConversationsDto(conversationList));
+
+                    string baseUri = "api/conversations/" + username + "?";
+                    string nextUri = "", previousUri = "";
+
+                    if(conversationList.Count > 0) {
+                            nextUri = baseUri + "startCt=" + OrderedConversationEntity.ToRowKey(conversationList.First().LastModifiedDateUtc) + "&limit=" + limit.ToString();
+                            previousUri = baseUri + "endCt=" + OrderedConversationEntity.ToRowKey(conversationList.Last().LastModifiedDateUtc) + "&limit=" + limit.ToString();
+                    }
+
+                    return Ok(new ListConversationsDto(conversationList, nextUri, previousUri));
                 });
             }
             catch (ProfileNotFoundException)

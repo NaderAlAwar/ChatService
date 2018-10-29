@@ -33,9 +33,9 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
         }
 
-        public Task<IEnumerable<Conversation>> ListConversations(string username)
+        public Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
         {
-            return listConversationsMetric.TrackTime(() => store.ListConversations(username));
+            return listConversationsMetric.TrackTime(() => store.ListConversations(username, startCt, endCt, limit));
         }
 
         public Task AddConversation(Conversation conversation)
