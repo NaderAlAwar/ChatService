@@ -87,9 +87,9 @@ namespace ChatService.Storage.Azure
             );
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId)
+        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
-            return messagesStore.ListMessages(conversationId);
+            return messagesStore.ListMessages(conversationId, startCt, endCt, limit);
         }
 
         public async Task AddMessage(string conversationId, Message message)
