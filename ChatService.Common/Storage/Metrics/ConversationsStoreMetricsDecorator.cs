@@ -23,9 +23,9 @@ namespace ChatService.Storage.Metrics
             addConversationMetric = metricsClient.CreateAggregateMetric("AddConversationTime");
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId)
+        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
-            return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId));
+            return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId, startCt, endCt, limit));
         }
 
         public Task AddMessage(string conversationId, Message message)

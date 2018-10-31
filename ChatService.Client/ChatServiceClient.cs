@@ -155,11 +155,11 @@ namespace ChatService.Client
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
         }
-        public async Task<ListMessagesDto> ListMessages(string conversationId)
+        public async Task<ListMessagesDto> ListMessages(string conversationId, int limit = 50)
         {
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}");
+                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}?limit={limit.ToString()}");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -180,6 +180,33 @@ namespace ChatService.Client
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
         }
+
+        public async Task<ListMessagesDto> ListMessagesByUri(string uri)
+        {
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync(uri);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                }
+
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ListMessagesDto>(content);
+            }
+            catch (JsonException e)
+            {
+                throw new ChatServiceException("Failed to deserialize the response", e,
+                    "Serialization Exception", HttpStatusCode.InternalServerError);
+            }
+            catch (Exception e)
+            {
+                throw new ChatServiceException("Failed to reach chat service", e,
+                    "Internal Server Error", HttpStatusCode.InternalServerError);
+            }
+        }
+
 
         public async Task SendMessage(string conversationId, SendMessageDto messageDto)
         {
