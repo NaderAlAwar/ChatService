@@ -1,4 +1,5 @@
 ﻿using System;
+using ChatService.Notifications;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using ChatService.Storage.Metrics;
@@ -26,6 +27,7 @@ namespace ChatService
             services.AddOptions();
 
             AzureStorageSettings azureStorageSettings = GetStorageSettings();
+            NotificationsServiceSettings notificationsServiceSettings = GetNotificationsSettings();
 
             services.AddSingleton<IMetricsClient>(context =>
             {
@@ -33,6 +35,8 @@ namespace ChatService
                     TimeSpan.FromSeconds(15));
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
+
+            services.AddSingleton<INotificationsService>(new SignalRNotificationService(notificationsServiceSettings.BaseUri));
 
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
@@ -59,6 +63,14 @@ namespace ChatService
             AzureStorageSettings storageSettings = new AzureStorageSettings();
             storageConfiguration.Bind(storageSettings);
             return storageSettings;
+        }
+
+        private NotificationsServiceSettings GetNotificationsSettings()
+        {
+            IConfiguration notificationsConfiguration = Configuration.GetSection(nameof(NotificationsServiceSettings));
+            NotificationsServiceSettings notificationsSettings = new NotificationsServiceSettings();
+            notificationsConfiguration.Bind(notificationsSettings);
+            return notificationsSettings;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
