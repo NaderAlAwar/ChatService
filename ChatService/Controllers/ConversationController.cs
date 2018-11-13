@@ -76,18 +76,12 @@ namespace ChatService.Controllers
                     logger.LogInformation(Events.ConversationMessageAdded,
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
 
-                    var conversations = await conversationsStore.ListConversations(messageDto.SenderUsername);
-                    var newMessagePayload = new NotificationPayload(currentTime, "new_message", id);
+                    var conversation = await conversationsStore.GetConversation(messageDto.SenderUsername, id);
+                    var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id);
 
-                    foreach (var conversation in conversations)
+                    foreach (var participant in conversation.Participants)
                     {
-                        if(conversation.Id == id)
-                        {
-                            foreach (var participant in conversation.Participants)
-                            {
-                                notificationsService.SendNotification(participant, newMessagePayload);
-                            }
-                        }
+                        await notificationsService.SendNotificationAsync(participant, newMessagePayload);
                     }
                     
                     return Ok(message);

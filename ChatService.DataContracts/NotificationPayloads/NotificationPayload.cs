@@ -8,12 +8,12 @@ namespace ChatService.DataContracts
     {
         public NotificationPayload(DateTime utcTime, string type, string conversationId)
         {
-            this.utcTime = utcTime;
-            this.type = type;
-            this.conversationId = conversationId;
+            UtcTime = utcTime;
+            Type = type;
+            ConversationId = conversationId;
         }
-        public DateTime utcTime { get; set; }
-        public string type { get; set; }
-        public string conversationId { get; set; }
+        public DateTime UtcTime { get; set; }
+        public string Type { get; set; }
+        public string ConversationId { get; set; }
     }
 }

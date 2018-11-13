@@ -20,6 +20,22 @@ namespace ChatService.Storage.Azure
             this.messagesStore = messagesStore;
         }
 
+        public async Task<Conversation> GetConversation(string username, string conversationId)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId))
+            {
+                throw new ArgumentNullException(nameof(conversationId));
+            }
+            if (string.IsNullOrWhiteSpace(username))
+            {
+                throw new ArgumentNullException(nameof(username));
+            }
+
+            var entity = await RetrieveConversationEntity(username, conversationId);
+
+            return new Conversation(conversationId, entity.Participants.Split(ParticipantsSeparator), entity.GetLastModifiedDateTimeUtc());
+        }
+
         public async Task<IEnumerable<Conversation>> ListConversations(string username)
         {
             if (string.IsNullOrWhiteSpace(username))

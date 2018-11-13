@@ -36,7 +36,7 @@ namespace ChatService
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
 
-            services.AddSingleton<INotificationsService>(new SignalRNotificationService(notificationsServiceSettings.BaseUri));
+            services.AddSingleton<INotificationsService>(new NotificationService(notificationsServiceSettings.BaseUri));
 
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);

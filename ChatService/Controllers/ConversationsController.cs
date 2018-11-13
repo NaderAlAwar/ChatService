@@ -87,10 +87,10 @@ namespace ChatService.Controllers
 
                     logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
 
-                    var newConversationPayload = new NotificationPayload(currentTime, "new_conversation", id);
+                    var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id);
                     foreach (var user in conversationDto.Participants)
                     {
-                        notificationsService.SendNotification(user, newConversationPayload);
+                        await notificationsService.SendNotificationAsync(user, newConversationPayload);
                     }
 
                     return Ok(conversation);

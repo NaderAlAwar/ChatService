@@ -42,5 +42,10 @@ namespace ChatService.Storage.Metrics
         {
             return addConversationMetric.TrackTime(() => store.AddConversation(conversation));
         }
+
+        public Task<Conversation> GetConversation(string username, string conversationId)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }
