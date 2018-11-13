@@ -8,6 +8,6 @@ namespace ChatService.Notifications
 {
     public interface INotificationsService
     {
-        Task SendNotification(string user, NotificationPayload payload);
+        void SendNotification(string user, NotificationPayload payload);
     }
 }

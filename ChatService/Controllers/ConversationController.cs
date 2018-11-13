@@ -76,8 +76,20 @@ namespace ChatService.Controllers
                     logger.LogInformation(Events.ConversationMessageAdded,
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
 
-                   // var newMessagePayload = new NotificationPayload(currentTime, "new_message", id, new string[]{messageDto.SenderUsername, messageDto.) we dont know the recipient username
+                    var conversations = await conversationsStore.ListConversations(messageDto.SenderUsername);
+                    var newMessagePayload = new NotificationPayload(currentTime, "new_message", id);
 
+                    foreach (var conversation in conversations)
+                    {
+                        if(conversation.Id == id)
+                        {
+                            foreach (var participant in conversation.Participants)
+                            {
+                                notificationsService.SendNotification(participant, newMessagePayload);
+                            }
+                        }
+                    }
+                    
                     return Ok(message);
                 });
             }

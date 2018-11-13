@@ -15,16 +15,42 @@ namespace ChatService.Notifications
 
         public SignalRNotificationService(string baseUri)
         {
+            httpClient = new HttpClient();
             this.baseUri = baseUri;
         }
 
-        public Task SendNotification(string user, NotificationPayload payload)
+        public void SendNotification(string user, NotificationPayload payload)
         {
-            string uri = $"{baseUri} + /api/Notifications/{user}";
+            CheckArguments(user, payload);
+
+            string uri = $"{baseUri}/api/Notifications/{user}";
             var jsonPayload = JsonConvert.SerializeObject(payload);
             var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
             httpClient.PostAsync(uri, httpContent);
-            return Task.CompletedTask;
+        }
+
+        private void CheckArguments(string user, NotificationPayload payload)
+        {
+            if (string.IsNullOrWhiteSpace(user))
+            {
+                throw new ArgumentNullException(nameof(user));
+            }
+            else if (payload == null)
+            {
+                throw new ArgumentNullException(nameof(payload));
+            }
+            else if (string.IsNullOrWhiteSpace(payload.conversationId))
+            {
+                throw new ArgumentNullException(nameof(payload.conversationId));
+            }
+            else if (string.IsNullOrWhiteSpace(payload.type))
+            {
+                throw new ArgumentNullException(nameof(payload.type));
+            }
+            else if (payload.utcTime == null)
+            {
+                throw new ArgumentNullException(nameof(payload.utcTime));
+            }
         }
     }
 }
