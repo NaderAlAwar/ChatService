@@ -11,6 +11,8 @@ namespace ChatService.Storage
 
         Task AddConversation(Conversation conversation);
 
+        Task<Conversation> GetConversation(string username, string conversationId);
+
         //Task<bool> TryDeleteConversation(string conversationId);
     }
 }

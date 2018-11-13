@@ -8,25 +8,25 @@ using Newtonsoft.Json;
 
 namespace ChatService.Notifications
 {
-    public class SignalRNotificationService : INotificationsService
+    public class NotificationService : INotificationsService
     {
         private readonly HttpClient httpClient;
         private readonly string baseUri;
 
-        public SignalRNotificationService(string baseUri)
+        public NotificationService(string baseUri)
         {
             httpClient = new HttpClient();
             this.baseUri = baseUri;
         }
 
-        public void SendNotification(string user, NotificationPayload payload)
+        public async Task SendNotificationAsync(string user, NotificationPayload payload)
         {
             CheckArguments(user, payload);
 
             string uri = $"{baseUri}/api/Notifications/{user}";
             var jsonPayload = JsonConvert.SerializeObject(payload);
             var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            httpClient.PostAsync(uri, httpContent);
+            await httpClient.PostAsync(uri, httpContent);
         }
 
         private void CheckArguments(string user, NotificationPayload payload)
@@ -39,17 +39,17 @@ namespace ChatService.Notifications
             {
                 throw new ArgumentNullException(nameof(payload));
             }
-            else if (string.IsNullOrWhiteSpace(payload.conversationId))
+            else if (string.IsNullOrWhiteSpace(payload.ConversationId))
             {
-                throw new ArgumentNullException(nameof(payload.conversationId));
+                throw new ArgumentNullException(nameof(payload.ConversationId));
             }
-            else if (string.IsNullOrWhiteSpace(payload.type))
+            else if (string.IsNullOrWhiteSpace(payload.Type))
             {
-                throw new ArgumentNullException(nameof(payload.type));
+                throw new ArgumentNullException(nameof(payload.Type));
             }
-            else if (payload.utcTime == null)
+            else if (payload.UtcTime == null)
             {
-                throw new ArgumentNullException(nameof(payload.utcTime));
+                throw new ArgumentNullException(nameof(payload.UtcTime));
             }
         }
     }
