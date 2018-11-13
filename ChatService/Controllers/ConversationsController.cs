@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -93,8 +94,12 @@ namespace ChatService.Controllers
                     await conversationsStore.AddConversation(conversation);
 
                     logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
-                    var newConversationPayload = new NotificationPayload(currentTime, "new_conversation", id, conversationDto.Participants);
-                    notificationsService.SendNotification(conversationDto.Participants[0], newConversationPayload);
+
+                    var newConversationPayload = new NotificationPayload(currentTime, "new_conversation", id);
+                    foreach (var user in conversationDto.Participants)
+                    {
+                        notificationsService.SendNotification(user, newConversationPayload);
+                    }
 
                     return Ok(conversation);
                 });
