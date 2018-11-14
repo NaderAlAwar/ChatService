@@ -13,6 +13,7 @@ namespace ChatService.Storage.Metrics
         private readonly AggregateMetric addMessageMetric;
         private readonly AggregateMetric addConversationMetric;
         private readonly AggregateMetric listConversationsMetric;
+        private readonly AggregateMetric getConversationMetric;
 
         public ConversationStoreMetricsDecorator(IConversationsStore store, IMetricsClient metricsClient)
         {
@@ -22,6 +23,7 @@ namespace ChatService.Storage.Metrics
             addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageToConversationsStoreTime");
             listConversationsMetric = metricsClient.CreateAggregateMetric("ListConversationsTime");
             addConversationMetric = metricsClient.CreateAggregateMetric("AddConversationTime");
+            getConversationMetric = metricsClient.CreateAggregateMetric("GetConversationsTime");
         }
 
         public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
@@ -46,7 +48,7 @@ namespace ChatService.Storage.Metrics
 
         public Task<Conversation> GetConversation(string username, string conversationId)
         {
-            throw new System.NotImplementedException();
+            return getConversationMetric.TrackTime(() => store.GetConversation(username, conversationId));
         }
     }
 }
