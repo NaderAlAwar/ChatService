@@ -36,14 +36,14 @@ namespace ChatServiceTests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task ListConversations_InvalidUsername(string username)
         {
-            await store.ListConversations(username);
+            await store.ListConversations(username, "", "", 50);
         }
 
         [TestMethod]
         [ExpectedException(typeof(StorageErrorException))]
         public async Task ListConversations_StorageIsUnavailable()
         {
-            await store.ListConversations("foo");
+            await store.ListConversations("foo", "", "", 50);
         }
 
         [TestMethod]

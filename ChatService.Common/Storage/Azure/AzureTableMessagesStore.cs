@@ -17,11 +17,25 @@ namespace ChatService.Storage.Azure
             this.table = cloudTable;
         }
 
-        public async Task<IEnumerable<Message>> ListMessages(string conversationId)
+        public async Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
+            string high = string.IsNullOrEmpty(startCt) ? DateTime.MaxValue.Ticks.ToString() : startCt;
+            string low = string.IsNullOrEmpty(endCt) ? DateTime.MinValue.Ticks.ToString() : endCt;
+
             TableQuery<MessageEntity> query = new TableQuery<MessageEntity>().Where(
-                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversationId));
-            query.TakeCount = 50;
+                TableQuery.CombineFilters(
+                    TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversationId),
+                    TableOperators.And,
+                    TableQuery.CombineFilters(
+                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThan,
+                            low),
+                        TableOperators.And,
+                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan,
+                            high)
+                    )
+                ));
+
+            query.TakeCount = limit;
 
             try
             {
@@ -51,7 +65,7 @@ namespace ChatService.Storage.Azure
             MessageEntity entity = new MessageEntity
             {
                 PartitionKey = conversationId,
-                RowKey = DateTimeUtils.InvertTicks(message.UtcTime.Ticks).ToString("d19"),
+                RowKey = DateTimeUtils.FromDateTimeToInvertedString(message.UtcTime),
                 SenderUsername = message.SenderUsername,
                 Text = message.Text
             };
