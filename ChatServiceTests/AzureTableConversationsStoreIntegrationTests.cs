@@ -20,7 +20,6 @@ namespace ChatServiceTests
         private static string ConnectionString { get; set; }
         private static AzureStorageSettings azureStorageSettings;
 
-
         [ClassInitialize]
         public static void ClassInitialize(TestContext context)
         {
