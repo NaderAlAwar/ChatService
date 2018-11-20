@@ -3,9 +3,6 @@
     "ChatService": {
       "commandName": "Project",
       "workingDirectory": "$(outdir)",
-      "environmentVariables": {
-        "ASPNETCORE_ENVIRONMENT": "Development"
-      },
       "applicationUrl": "http://localhost:5050/"
     }
   }
