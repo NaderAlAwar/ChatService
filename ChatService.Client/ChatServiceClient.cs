@@ -63,7 +63,7 @@ namespace ChatService.Client
             }
             catch (JsonException e)
             {
-                throw new ChatServiceException($"Failed to deserialize profile for user {username}", e, 
+                throw new ChatServiceException($"Failed to deserialize profile for user {username}", e,
                     "Serialization Exception", HttpStatusCode.InternalServerError);
             }
             catch (Exception e)
@@ -71,7 +71,7 @@ namespace ChatService.Client
                 // make sure we don't catch our own exception we threw above
                 if (e is ChatServiceException) throw;
 
-                throw new ChatServiceException("Failed to reach chat service", e, 
+                throw new ChatServiceException("Failed to reach chat service", e,
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
         }
@@ -94,7 +94,7 @@ namespace ChatService.Client
             }
             catch (JsonException e)
             {
-                throw new ChatServiceException("Failed to deserialize the response", e, 
+                throw new ChatServiceException("Failed to deserialize the response", e,
                     "Serialization Exception", HttpStatusCode.InternalServerError);
             }
             catch (Exception e)
@@ -104,11 +104,11 @@ namespace ChatService.Client
             }
         }
 
-        public async Task<ListConversationsDto> ListConversations(string username)
+        public async Task<ListConversationsDto> ListConversations(string username, int limit = 50)
         {
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync($"api/conversations/{username}");
+                HttpResponseMessage response = await httpClient.GetAsync($"api/conversations/{username}?limit={limit.ToString()}");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -130,11 +130,36 @@ namespace ChatService.Client
             }
         }
 
-        public async Task<ListMessagesDto> ListMessages(string conversationId)
+        public async Task<ListConversationsDto> ListConversationsByUri(string uri)
         {
             try
             {
-                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}");
+                HttpResponseMessage response = await httpClient.GetAsync(uri);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                }
+
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ListConversationsDto>(content);
+            }
+            catch (JsonException e)
+            {
+                throw new ChatServiceException("Failed to deserialize the response", e,
+                    "Serialization Exception", HttpStatusCode.InternalServerError);
+            }
+            catch (Exception e)
+            {
+                throw new ChatServiceException("Failed to reach chat service", e,
+                    "Internal Server Error", HttpStatusCode.InternalServerError);
+            }
+        }
+        public async Task<ListMessagesDto> ListMessages(string conversationId, int limit = 50)
+        {
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync($"api/conversation/{conversationId}?limit={limit.ToString()}");
 
                 if (!response.IsSuccessStatusCode)
                 {
@@ -155,6 +180,33 @@ namespace ChatService.Client
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
         }
+
+        public async Task<ListMessagesDto> ListMessagesByUri(string uri)
+        {
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync(uri);
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                }
+
+                string content = await response.Content.ReadAsStringAsync();
+                return JsonConvert.DeserializeObject<ListMessagesDto>(content);
+            }
+            catch (JsonException e)
+            {
+                throw new ChatServiceException("Failed to deserialize the response", e,
+                    "Serialization Exception", HttpStatusCode.InternalServerError);
+            }
+            catch (Exception e)
+            {
+                throw new ChatServiceException("Failed to reach chat service", e,
+                    "Internal Server Error", HttpStatusCode.InternalServerError);
+            }
+        }
+
 
         public async Task SendMessage(string conversationId, SendMessageDto messageDto)
         {

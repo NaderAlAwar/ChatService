@@ -47,7 +47,7 @@ namespace ChatService.Storage.Memory
             }
         }
 
-        public Task<IEnumerable<Conversation>> ListConversations(string username)
+        public Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
         {
             if (!userConversations.TryGetValue(username, out var conversationList))
             {
@@ -57,7 +57,7 @@ namespace ChatService.Storage.Memory
             return Task.FromResult(conversationList.SortedConversations);
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId)
+        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             if (conversationsMessages.TryGetValue(conversationId, out var messageList))
             {

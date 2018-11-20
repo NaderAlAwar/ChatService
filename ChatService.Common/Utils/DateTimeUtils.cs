@@ -8,5 +8,9 @@ namespace ChatService.Utils
         {
             return DateTime.MaxValue.Ticks - ticks;
         }
+
+        public static string FromDateTimeToInvertedString(DateTime utcTime) {
+            return InvertTicks(utcTime.Ticks).ToString("d19");
+        }
     }
 }

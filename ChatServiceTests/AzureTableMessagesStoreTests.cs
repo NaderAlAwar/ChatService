@@ -28,7 +28,7 @@ namespace ChatServiceTests
         {
             tableMock.Setup(m => m.ExecuteQuery(It.IsAny<TableQuery<MessageEntity>>()))
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 503 }, "Storage is down", null));
-            await store.ListMessages("conversationId");
+            await store.ListMessages("conversationId", "", "", 50);
         }
 
         [TestMethod]

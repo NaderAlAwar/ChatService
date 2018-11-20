@@ -53,6 +53,57 @@ namespace ChatServiceFunctionalTests
         }
 
         [TestMethod]
+        public async Task paging() {
+            string participant1 = RandomString();
+            string participant2 = RandomString();
+            string participant3 = RandomString();
+            string participant4 = RandomString();
+
+            await Task.WhenAll(
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1"}),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" }),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant3, FirstName = "Participant", LastName = "3" }),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant4, FirstName = "Participant", LastName = "4" })
+            );
+
+            await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant2 }});
+            await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant3 } });
+            await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant4 } });
+ 
+            ListConversationsDto participant1ConversationsDto = await chatServiceClient.ListConversations(participant1, limit:2);
+            Assert.AreEqual(2, participant1ConversationsDto.Conversations.Count);
+            Assert.AreEqual(participant4, participant1ConversationsDto.Conversations[0].Recipient.Username);
+            Assert.AreEqual(participant3, participant1ConversationsDto.Conversations[1].Recipient.Username);
+ 
+            ListConversationsDto participant2ConversationsDto = await chatServiceClient.ListConversations(participant2);
+            Assert.AreEqual(1, participant2ConversationsDto.Conversations.Count);
+            Assert.AreEqual(participant1, participant2ConversationsDto.Conversations[0].Recipient.Username);
+
+            // fetch previous page
+            participant1ConversationsDto = await chatServiceClient.ListConversationsByUri(participant1ConversationsDto.PreviousUri);
+            Assert.AreEqual(1, participant1ConversationsDto.Conversations.Count);
+            Assert.AreEqual(participant2, participant1ConversationsDto.Conversations[0].Recipient.Username);
+
+            // fetch previous page again but there is nothing
+            var dto = await chatServiceClient.ListConversationsByUri(participant1ConversationsDto.PreviousUri);
+            Assert.AreEqual(0, dto.Conversations.Count);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(dto.PreviousUri));
+            Assert.IsTrue(string.IsNullOrWhiteSpace(dto.NextUri));
+
+            // fetch next page
+            participant1ConversationsDto = await chatServiceClient.ListConversationsByUri(participant1ConversationsDto.NextUri);
+            Assert.AreEqual(2, participant1ConversationsDto.Conversations.Count);
+            Assert.AreEqual(participant4, participant1ConversationsDto.Conversations[0].Recipient.Username);
+            Assert.AreEqual(participant3, participant1ConversationsDto.Conversations[1].Recipient.Username);
+
+            // fetch next page
+            dto = await chatServiceClient.ListConversationsByUri(participant1ConversationsDto.NextUri);
+            Assert.AreEqual(0, dto.Conversations.Count);
+            Assert.IsTrue(string.IsNullOrWhiteSpace(dto.PreviousUri));
+            Assert.IsTrue(string.IsNullOrWhiteSpace(dto.NextUri));
+        }
+
+        [TestMethod]
         public async Task AddListMessages()
         {
             string participant1 = RandomString();

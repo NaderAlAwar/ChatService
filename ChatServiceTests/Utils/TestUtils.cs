@@ -4,6 +4,7 @@ using System.Linq;
 using System.Net;
 using System.Text;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceTests.Utils
@@ -21,6 +22,14 @@ namespace ChatServiceTests.Utils
             ObjectResult objectResult = (ObjectResult)actionResult;
 
             Assert.AreEqual((int)statusCode, objectResult.StatusCode);
+        }
+
+        public static IConfiguration InitConfiguration()
+        {
+            var config = new ConfigurationBuilder()
+            .AddJsonFile("appsettings.test.json")
+            .Build();
+            return config;
         }
     }
 }

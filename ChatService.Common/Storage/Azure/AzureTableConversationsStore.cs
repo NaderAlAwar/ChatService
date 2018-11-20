@@ -20,28 +20,31 @@ namespace ChatService.Storage.Azure
             this.messagesStore = messagesStore;
         }
 
-        public async Task<IEnumerable<Conversation>> ListConversations(string username)
+        public async Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
         {
             if (string.IsNullOrWhiteSpace(username))
             {
                 throw new ArgumentNullException(nameof(username));
             }
 
+            string high = string.IsNullOrEmpty(startCt) ? OrderedConversationEntity.MaxRowKey : startCt;
+            string low = string.IsNullOrEmpty(endCt) ? OrderedConversationEntity.MinRowKey : endCt;
+
             TableQuery<OrderedConversationEntity> query = new TableQuery<OrderedConversationEntity>().Where(
                 TableQuery.CombineFilters(
                     TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, username),
                     TableOperators.And,
                     TableQuery.CombineFilters(
-                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThanOrEqual,
-                            OrderedConversationEntity.MinRowKey),
+                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.GreaterThan,
+                            low),
                         TableOperators.And,
-                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThanOrEqual,
-                            OrderedConversationEntity.MaxRowKey)
+                        TableQuery.GenerateFilterCondition("RowKey", QueryComparisons.LessThan,
+                            high)
                     )
                 )
             );
 
-            query.TakeCount = 50;
+            query.TakeCount = limit;
 
             try
             {
@@ -84,9 +87,9 @@ namespace ChatService.Storage.Azure
             );
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId)
+        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
-            return messagesStore.ListMessages(conversationId);
+            return messagesStore.ListMessages(conversationId, startCt, endCt, limit);
         }
 
         public async Task AddMessage(string conversationId, Message message)

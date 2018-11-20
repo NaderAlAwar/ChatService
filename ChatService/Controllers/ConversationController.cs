@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Logging;
 using ChatService.Storage;
+using ChatService.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
@@ -29,19 +30,26 @@ namespace ChatService.Controllers
             postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
 
-        //TODO: add paging
         [HttpGet("{conversationId}")]
-        public async Task<IActionResult> ListMessages(string conversationId)
+        public async Task<IActionResult> ListMessages(string conversationId, [FromQuery] string startCt, [FromQuery] string endCt, [FromQuery] int limit)
         {
             try
             {
                 return await listMessagesControllerTimeMetric.TrackTime(async () =>
                 {
-                    IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId);
-                    IEnumerable<ListMessagesItemDto> dtos =
-                        messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime));
+                    IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);
+                    List<ListMessagesItemDto> dtos =
+                        (messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime))).ToList();
 
-                    return Ok(new ListMessagesDto(dtos));
+                    string baseUri = "api/conversation/" + conversationId + "?";
+                    string nextUri = "", previousUri = "";
+
+                    if(dtos.Count > 0) {
+                        nextUri = baseUri + "startCt=" + DateTimeUtils.FromDateTimeToInvertedString(dtos.First().UtcTime) + "&limit=" + limit.ToString();
+                        previousUri = baseUri + "endCt=" + DateTimeUtils.FromDateTimeToInvertedString(dtos.Last().UtcTime) + "&limit=" + limit.ToString();
+                    }
+
+                    return Ok(new ListMessagesDto(dtos, nextUri, previousUri));
                 });
             }
             catch (StorageErrorException e)
