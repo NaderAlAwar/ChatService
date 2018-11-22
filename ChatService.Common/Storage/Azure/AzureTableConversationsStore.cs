@@ -20,7 +20,7 @@ namespace ChatService.Storage.Azure
             this.messagesStore = messagesStore;
         }
 
-        public async Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
+        public async Task<SortedConversationsWindow> ListConversations(string username, string startCt, string endCt, int limit)
         {
             if (string.IsNullOrWhiteSpace(username))
             {
@@ -50,8 +50,20 @@ namespace ChatService.Storage.Azure
             {
                 var results = await table.ExecuteQuery(query);
                 List<OrderedConversationEntity> entities = results.Results;
-                return entities.Select(entity => new Conversation(entity.ConversationId, 
-                    entity.Participants.Split(ParticipantsSeparator), entity.GetLastModifiedDateTimeUtc()));
+
+                string newStartCt = "", newEndCt = "";
+                if (entities.Count > 0)
+                {
+                    newStartCt = entities.First().RowKey;
+                    newEndCt = entities.Last().RowKey;
+                }
+
+                return new SortedConversationsWindow(
+                    entities.Select(entity => new Conversation(entity.ConversationId,
+                        entity.Participants.Split(ParticipantsSeparator), entity.GetLastModifiedDateTimeUtc())),
+                    newStartCt,
+                    newEndCt
+                );
             }
             catch (StorageException e)
             {
@@ -87,7 +99,7 @@ namespace ChatService.Storage.Azure
             );
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
+        public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             return messagesStore.ListMessages(conversationId, startCt, endCt, limit);
         }

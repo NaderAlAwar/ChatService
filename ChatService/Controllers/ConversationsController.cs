@@ -40,10 +40,10 @@ namespace ChatService.Controllers
             {
                 return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
-                    var conversations = await conversationsStore.ListConversations(username, startCt, endCt, limit);
+                    var conversationsWindow = await conversationsStore.ListConversations(username, startCt, endCt, limit);
 
                     var conversationList = new List<ListConversationsItemDto>();
-                    foreach (var conversation in conversations)
+                    foreach (var conversation in conversationsWindow.Conversations)
                     {
                         string recipientUserName = conversation.Participants.Except(new[] { username }).First();
                         UserProfile profile = await profileStore.GetProfile(recipientUserName);
@@ -52,13 +52,11 @@ namespace ChatService.Controllers
                             conversation.LastModifiedDateUtc));
                     }
 
-                    string baseUri = "api/conversations/" + username + "?";
-                    string nextUri = "", previousUri = "";
+                    string newStartCt = conversationsWindow.StartCt;
+                    string newEndCt = conversationsWindow.EndCt;
 
-                    if(conversationList.Count > 0) {
-                            nextUri = baseUri + "startCt=" + OrderedConversationEntity.ToRowKey(conversationList.First().LastModifiedDateUtc) + "&limit=" + limit.ToString();
-                            previousUri = baseUri + "endCt=" + OrderedConversationEntity.ToRowKey(conversationList.Last().LastModifiedDateUtc) + "&limit=" + limit.ToString();
-                    }
+                    string nextUri = (string.IsNullOrEmpty(newStartCt)) ? "" : $"api/conversations/{username}?startCt={newStartCt}&limit={limit}";
+                    string previousUri = (string.IsNullOrEmpty(newEndCt)) ? "" : $"api/conversations/{username}?endCt={newEndCt}&limit={limit}";
 
                     return Ok(new ListConversationsDto(conversationList, nextUri, previousUri));
                 });
