@@ -25,7 +25,7 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
+        public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId, startCt, endCt, limit));
         }

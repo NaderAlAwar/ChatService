@@ -47,23 +47,23 @@ namespace ChatService.Storage.Memory
             }
         }
 
-        public Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
+        public Task<SortedConversationsWindow> ListConversations(string username, string startCt, string endCt, int limit)
         {
             if (!userConversations.TryGetValue(username, out var conversationList))
             {
-                return Task.FromResult(Enumerable.Empty<Conversation>());
+                return Task.FromResult(new SortedConversationsWindow(Enumerable.Empty<Conversation>(), "", ""));
             }
 
-            return Task.FromResult(conversationList.SortedConversations);
+            return Task.FromResult(new SortedConversationsWindow(conversationList.SortedConversations, "", ""));
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
+        public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             if (conversationsMessages.TryGetValue(conversationId, out var messageList))
             {
-                return Task.FromResult(messageList.AsEnumerable());
+                return Task.FromResult(new SortedMessagesWindow(messageList.AsEnumerable(), "", ""));
             }
-            return Task.FromResult(Enumerable.Empty<Message>());
+            return Task.FromResult(new SortedMessagesWindow(Enumerable.Empty<Message>(), "", ""));
         }
 
         private Task AddConversation(string username, Conversation conversation)
