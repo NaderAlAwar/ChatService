@@ -17,7 +17,7 @@ namespace ChatService.Storage.Azure
             this.table = cloudTable;
         }
 
-        public async Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
+        public async Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             string high = string.IsNullOrEmpty(startCt) ? DateTime.MaxValue.Ticks.ToString() : startCt;
             string low = string.IsNullOrEmpty(endCt) ? DateTime.MinValue.Ticks.ToString() : endCt;
@@ -41,13 +41,23 @@ namespace ChatService.Storage.Azure
             {
                 var results = await table.ExecuteQuery(query);
                 List<MessageEntity> entities = results.Results;
-                return entities.Select(entity =>
+
+                string newStartCt = "", newEndCt = "";
+                if (entities.Count > 0)
+                {
+                    newStartCt = entities.First().RowKey;
+                    newEndCt = entities.Last().RowKey;
+                }
+
+                IEnumerable<Message> messageList = entities.Select(entity =>
                 {
                     long ticks = long.Parse(entity.RowKey);
                     ticks = DateTimeUtils.InvertTicks(ticks);
                     var utcTime = new DateTime(ticks);
                     return new Message(entity.Text, entity.SenderUsername, utcTime);
                 });
+
+                return new SortedMessagesWindow(messageList, newStartCt, newEndCt);
             }
             catch (StorageException e)
             {
