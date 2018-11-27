@@ -1,6 +1,7 @@
 ﻿using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using ChatService.Storage.Azure;
 using Microsoft.Extensions.Logging.Metrics;
 
 namespace ChatService.Storage.Metrics
@@ -23,7 +24,7 @@ namespace ChatService.Storage.Metrics
             addConversationMetric = metricsClient.CreateAggregateMetric("AddConversationTime");
         }
 
-        public Task<IEnumerable<Message>> ListMessages(string conversationId, string startCt, string endCt, int limit)
+        public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
         {
             return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId, startCt, endCt, limit));
         }
@@ -33,7 +34,7 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
         }
 
-        public Task<IEnumerable<Conversation>> ListConversations(string username, string startCt, string endCt, int limit)
+        public Task<SortedConversationsWindow> ListConversations(string username, string startCt, string endCt, int limit)
         {
             return listConversationsMetric.TrackTime(() => store.ListConversations(username, startCt, endCt, limit));
         }

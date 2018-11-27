@@ -37,17 +37,15 @@ namespace ChatService.Controllers
             {
                 return await listMessagesControllerTimeMetric.TrackTime(async () =>
                 {
-                    IEnumerable<Message> messages = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);
+                    var messagesWindow = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);
                     List<ListMessagesItemDto> dtos =
-                        (messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime))).ToList();
+                        (messagesWindow.Messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime))).ToList();
+                        
+                    string newStartCt = messagesWindow.StartCt;
+                    string newEndCt = messagesWindow.EndCt;
 
-                    string baseUri = "api/conversation/" + conversationId + "?";
-                    string nextUri = "", previousUri = "";
-
-                    if(dtos.Count > 0) {
-                        nextUri = baseUri + "startCt=" + DateTimeUtils.FromDateTimeToInvertedString(dtos.First().UtcTime) + "&limit=" + limit.ToString();
-                        previousUri = baseUri + "endCt=" + DateTimeUtils.FromDateTimeToInvertedString(dtos.Last().UtcTime) + "&limit=" + limit.ToString();
-                    }
+                    string nextUri = (string.IsNullOrEmpty(newStartCt)) ? "" : $"api/conversations/{conversationId}?startCt={newStartCt}&limit={limit}";
+                    string previousUri = (string.IsNullOrEmpty(newEndCt)) ? "" : $"api/conversations/{conversationId}?endCt={newEndCt}&limit={limit}";
 
                     return Ok(new ListMessagesDto(dtos, nextUri, previousUri));
                 });

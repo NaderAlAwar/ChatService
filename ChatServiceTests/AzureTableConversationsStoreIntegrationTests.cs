@@ -66,7 +66,7 @@ namespace ChatServiceTests
                 await store.AddMessage(conversationId, message);
             }
 
-            List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).ToList();
+            List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).Messages.ToList();
             var reversedMessages = messages.Reverse().ToList();
             CollectionAssert.AreEqual(reversedMessages, listedMessages);
         }
@@ -98,7 +98,7 @@ namespace ChatServiceTests
                 await store.AddMessage(conversationId, message);
             }
 
-            List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).ToList();
+            List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).Messages.ToList();
             CollectionAssert.AreEquivalent(messages.ToList(), listedMessages); // messages are ordered from newer to older
         }
 
@@ -123,7 +123,7 @@ namespace ChatServiceTests
                 await store.AddConversation(conversation);
             }
 
-            var userBConversations = (await store.ListConversations(userB, "", "", 50)).ToList();
+            var userBConversations = (await store.ListConversations(userB, "", "", 50)).Conversations.ToList();
             Assert.AreEqual(2, userBConversations.Count());
             Assert.AreEqual(conversations[2], userBConversations[0]);
             Assert.AreEqual(conversations[0], userBConversations[1]);
@@ -154,12 +154,12 @@ namespace ChatServiceTests
             Message message = new Message("bla bla", userA, dateTime.AddSeconds(4));
             await store.AddMessage(conversations[0].Id, message);
 
-            var userAConversations = (await store.ListConversations(userA, "", "", 50)).ToList();
+            var userAConversations = (await store.ListConversations(userA, "", "", 50)).Conversations.ToList();
             Assert.AreEqual(3, userAConversations.Count());
             Assert.AreEqual(conversations[0].Id, userAConversations[0].Id);
             Assert.AreEqual(message.UtcTime, userAConversations[0].LastModifiedDateUtc);
 
-            var userBConversations = (await store.ListConversations(userB, "", "", 50)).ToList();
+            var userBConversations = (await store.ListConversations(userB, "", "", 50)).Conversations.ToList();
             Assert.AreEqual(2, userBConversations.Count());
             Assert.AreEqual(conversations[0].Id, userBConversations[0].Id);
             Assert.AreEqual(message.UtcTime, userBConversations[0].LastModifiedDateUtc);
@@ -187,25 +187,26 @@ namespace ChatServiceTests
                 await store.AddConversation(conversation);
             }
 
-            List<Conversation> userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(0)), "", 2)).ToList();
+            List<Conversation> userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(0)), "", 2)).Conversations.ToList();
             Assert.AreEqual(2, userAConversations.Count);
             Assert.AreEqual(userD, userAConversations[0].Participants[1]);
             Assert.AreEqual(userC, userAConversations[1].Participants[1]);
 
-            userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), "", 2)).ToList();
+            userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), "", 2)).Conversations.ToList();
+
             Assert.AreEqual(2, userAConversations.Count);
             Assert.AreEqual(userD, userAConversations[0].Participants[1]);
             Assert.AreEqual(userC, userAConversations[1].Participants[1]);
 
-            userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), "", 2)).ToList();
+            userAConversations = (await store.ListConversations(userA, OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), "", 2)).Conversations.ToList();
             Assert.AreEqual(0, userAConversations.Count);
 
-            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), 2)).ToList();
+            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(3)), 2)).Conversations.ToList();
             Assert.AreEqual(2, userAConversations.Count);
             Assert.AreEqual(userC, userAConversations[0].Participants[1]);
             Assert.AreEqual(userB, userAConversations[1].Participants[1]);
 
-            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), 2)).ToList();
+            userAConversations = (await store.ListConversations(userA, "", OrderedConversationEntity.ToRowKey(dateTime.AddSeconds(1)), 2)).Conversations.ToList();
             Assert.AreEqual(0, userAConversations.Count);
         }
 
@@ -233,20 +234,20 @@ namespace ChatServiceTests
                 await store.AddMessage(conversationId, message);
             }
 
-            List<Message> returnedMessages = (await store.ListMessages(conversationId, DateTimeUtils.FromDateTimeToInvertedString(dateTime), "", 2)).ToList();
+            List<Message> returnedMessages = (await store.ListMessages(conversationId, DateTimeUtils.FromDateTimeToInvertedString(dateTime), "", 2)).Messages.ToList();
             Assert.AreEqual(2, returnedMessages.Count);
             Assert.AreEqual("Cool! Are you taking EECE503E?", returnedMessages[0].Text);
             Assert.AreEqual("Writing some code!", returnedMessages[1].Text);
 
-            returnedMessages = (await store.ListMessages(conversationId, DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(4)), "", 2)).ToList();
+            returnedMessages = (await store.ListMessages(conversationId, DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(4)), "", 2)).Messages.ToList();
             Assert.AreEqual(0, returnedMessages.Count);
 
-            returnedMessages = (await store.ListMessages(conversationId, "", DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(5)), 2)).ToList();
+            returnedMessages = (await store.ListMessages(conversationId, "", DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(5)), 2)).Messages.ToList();
             Assert.AreEqual(2, returnedMessages.Count);
             Assert.AreEqual("Cool! Are you taking EECE503E?", returnedMessages[0].Text);
             Assert.AreEqual("Writing some code!", returnedMessages[1].Text);
 
-            returnedMessages = (await store.ListMessages(conversationId, "", DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(1)), 2)).ToList();
+            returnedMessages = (await store.ListMessages(conversationId, "", DateTimeUtils.FromDateTimeToInvertedString(dateTime.AddSeconds(1)), 2)).Messages.ToList();
             Assert.AreEqual(0, returnedMessages.Count);
         }
     }
