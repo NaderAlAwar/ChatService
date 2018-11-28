@@ -62,7 +62,7 @@ namespace ChatServiceTests
             }
             catch (ChatServiceException e)
             {
-                Assert.AreEqual(HttpStatusCode.ServiceUnavailable, e.StatusCode);
+                Assert.AreEqual(HttpStatusCode.NotFound, e.StatusCode);
             }
         }
 
