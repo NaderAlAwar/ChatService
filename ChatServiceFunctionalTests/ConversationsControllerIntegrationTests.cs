@@ -3,6 +3,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ChatService.Client;
 using ChatService.DataContracts;
+using ChatService.Storage;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace ChatServiceFunctionalTests
@@ -27,11 +28,11 @@ namespace ChatServiceFunctionalTests
             string participant2 = RandomString();
             var createConversationDto = new CreateConversationDto
             {
-                Participants = new[] {participant1, participant2}
+                Participants = new[] { participant1, participant2 }
             };
 
             await Task.WhenAll(
-                chatServiceClient.CreateProfile(new CreateProfileDto {Username = participant1, FirstName = "Participant", LastName = "1"}),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1" }),
                 chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" })
             );
 
@@ -53,28 +54,29 @@ namespace ChatServiceFunctionalTests
         }
 
         [TestMethod]
-        public async Task paging() {
+        public async Task ConversationsPaging()
+        {
             string participant1 = RandomString();
             string participant2 = RandomString();
             string participant3 = RandomString();
             string participant4 = RandomString();
 
             await Task.WhenAll(
-                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1"}),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1" }),
                 chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" }),
                 chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant3, FirstName = "Participant", LastName = "3" }),
                 chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant4, FirstName = "Participant", LastName = "4" })
             );
 
-            await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant2 }});
+            await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant2 } });
             await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant3 } });
             await chatServiceClient.AddConversation(new CreateConversationDto { Participants = new[] { participant1, participant4 } });
- 
-            ListConversationsDto participant1ConversationsDto = await chatServiceClient.ListConversations(participant1, limit:2);
+
+            ListConversationsDto participant1ConversationsDto = await chatServiceClient.ListConversations(participant1, limit: 2);
             Assert.AreEqual(2, participant1ConversationsDto.Conversations.Count);
             Assert.AreEqual(participant4, participant1ConversationsDto.Conversations[0].Recipient.Username);
             Assert.AreEqual(participant3, participant1ConversationsDto.Conversations[1].Recipient.Username);
- 
+
             ListConversationsDto participant2ConversationsDto = await chatServiceClient.ListConversations(participant2);
             Assert.AreEqual(1, participant2ConversationsDto.Conversations.Count);
             Assert.AreEqual(participant1, participant2ConversationsDto.Conversations[0].Recipient.Username);
@@ -101,6 +103,51 @@ namespace ChatServiceFunctionalTests
             Assert.AreEqual(0, dto.Conversations.Count);
             Assert.IsTrue(string.IsNullOrWhiteSpace(dto.PreviousUri));
             Assert.IsTrue(string.IsNullOrWhiteSpace(dto.NextUri));
+        }
+
+        [TestMethod]
+        public async Task MessagesPaging()
+        {
+            string participant1 = RandomString();
+            string participant2 = RandomString();
+            var createConversationDto = new CreateConversationDto
+            {
+                Participants = new[] { participant1, participant2 }
+            };
+
+            await Task.WhenAll(
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1" }),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" })
+            );
+
+            var conversationDto = await chatServiceClient.AddConversation(createConversationDto);
+            DateTime dateTime = DateTime.UtcNow;
+
+            var messages = new[] {
+                new SendMessageDto("Hola what's up?", participant1),
+                new SendMessageDto("Not much you?", participant2),
+                new SendMessageDto("Writing some code!", participant1),
+                new SendMessageDto("Cool! Are you taking EECE503E?", participant2)
+            };
+
+            foreach(SendMessageDto message in messages) {
+                await chatServiceClient.SendMessage(conversationDto.Id, message);
+            }
+
+            ListMessagesDto messagesPayload = await chatServiceClient.ListMessages(conversationDto.Id, 3);
+            Assert.AreEqual(3, messagesPayload.Messages.Count);
+            Assert.AreEqual(messages[3].Text, messagesPayload.Messages[0].Text);
+            Assert.AreEqual(messages[2].Text, messagesPayload.Messages[1].Text);
+            Assert.AreEqual(messages[1].Text, messagesPayload.Messages[2].Text);
+
+            messagesPayload = await chatServiceClient.ListMessagesByUri(messagesPayload.PreviousUri);
+            Assert.AreEqual(1, messagesPayload.Messages.Count);
+            Assert.AreEqual(messages[0].Text, messagesPayload.Messages[0].Text);
+
+            messagesPayload = await chatServiceClient.ListMessagesByUri(messagesPayload.PreviousUri);
+            Assert.AreEqual(0, messagesPayload.Messages.Count);
+            Assert.AreEqual(messagesPayload.PreviousUri, "");
+            Assert.AreEqual(messagesPayload.PreviousUri, "");
         }
 
         [TestMethod]
