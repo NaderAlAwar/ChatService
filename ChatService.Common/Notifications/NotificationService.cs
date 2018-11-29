@@ -1,53 +1,64 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Net.Http;
 using System.Text;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
+using Microsoft.Azure.ServiceBus;
 using Newtonsoft.Json;
 
 namespace ChatService.Notifications
 {
-    public class NotificationService : INotificationsService
+    public class NotificationService : INotificationService
     {
         private readonly HttpClient httpClient;
-        private readonly string baseUri;
+        private readonly IQueueClient queueClient;
 
-        public NotificationService(string baseUri)
+        public NotificationService(IQueueClient queueClient)
         {
             httpClient = new HttpClient();
-            this.baseUri = baseUri;
+            this.queueClient = queueClient;
         }
 
-        public async Task SendNotificationAsync(string user, NotificationPayload payload)
+        public async Task SendNotificationAsync(NotificationPayload payload)
         {
-            CheckArguments(user, payload);
+            CheckArguments(payload);
 
-            string uri = $"{baseUri}/api/Notifications/{user}";
             var jsonPayload = JsonConvert.SerializeObject(payload);
-            var httpContent = new StringContent(jsonPayload, Encoding.UTF8, "application/json");
-            await httpClient.PostAsync(uri, httpContent);
+            var message = new Message(Encoding.UTF8.GetBytes(jsonPayload));
+            await queueClient.SendAsync(message);
         }
 
-        private void CheckArguments(string user, NotificationPayload payload)
+        private void CheckArguments(NotificationPayload payload)
         {
-            if (string.IsNullOrWhiteSpace(user))
-            {
-                throw new ArgumentNullException(nameof(user));
-            }
-            else if (payload == null)
+            if (payload == null)
             {
                 throw new ArgumentNullException(nameof(payload));
             }
-            else if (string.IsNullOrWhiteSpace(payload.ConversationId))
+
+            if (payload.Users == null || payload.Users.Length == 0)
+            {
+                throw new ArgumentNullException(nameof(payload.Users));
+            }
+
+            foreach (var username in payload.Users)
+            {
+                if (string.IsNullOrEmpty(username))
+                {
+                    throw new ArgumentNullException(nameof(username));
+                }
+            }
+
+            if (string.IsNullOrWhiteSpace(payload.ConversationId))
             {
                 throw new ArgumentNullException(nameof(payload.ConversationId));
             }
-            else if (string.IsNullOrWhiteSpace(payload.Type))
+
+            if (string.IsNullOrWhiteSpace(payload.Type))
             {
                 throw new ArgumentNullException(nameof(payload.Type));
             }
-            else if (payload.UtcTime == null)
+
+            if (payload.UtcTime == null)
             {
                 throw new ArgumentNullException(nameof(payload.UtcTime));
             }

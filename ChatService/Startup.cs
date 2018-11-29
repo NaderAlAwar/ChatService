@@ -5,6 +5,7 @@ using ChatService.Storage.Azure;
 using ChatService.Storage.Metrics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -26,8 +27,8 @@ namespace ChatService
         {
             services.AddOptions();
 
-            AzureStorageSettings azureStorageSettings = GetStorageSettings();
-            NotificationsServiceSettings notificationsServiceSettings = GetNotificationsSettings();
+            var azureStorageSettings = GetSettings<AzureStorageSettings>();
+            var notificationServiceSettings = GetSettings<NotificationServiceSettings>();
 
             services.AddSingleton<IMetricsClient>(context =>
             {
@@ -36,7 +37,11 @@ namespace ChatService
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
 
-            services.AddSingleton<INotificationsService>(new NotificationService(notificationsServiceSettings.BaseUri));
+            QueueClient queueClient = new QueueClient(notificationServiceSettings.ServiceBusConnectionString,
+                notificationServiceSettings.QueueName);
+            NotificationService notificationService = new NotificationService(queueClient);
+            services.AddSingleton<INotificationService>(context =>
+                new NotificationServiceMetricsDecorator(notificationService, context.GetRequiredService<IMetricsClient>()));
 
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
@@ -57,20 +62,12 @@ namespace ChatService
             services.AddMvc();
         }
 
-        private AzureStorageSettings GetStorageSettings()
+        private T GetSettings<T>() where T : new()
         {
-            IConfiguration storageConfiguration = Configuration.GetSection(nameof(AzureStorageSettings));
-            AzureStorageSettings storageSettings = new AzureStorageSettings();
-            storageConfiguration.Bind(storageSettings);
-            return storageSettings;
-        }
-
-        private NotificationsServiceSettings GetNotificationsSettings()
-        {
-            IConfiguration notificationsConfiguration = Configuration.GetSection(nameof(NotificationsServiceSettings));
-            NotificationsServiceSettings notificationsSettings = new NotificationsServiceSettings();
-            notificationsConfiguration.Bind(notificationsSettings);
-            return notificationsSettings;
+            var config = Configuration.GetSection((typeof(T).Name));
+            T settings = new T();
+            config.Bind(settings);
+            return settings;
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

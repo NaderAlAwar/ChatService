@@ -21,18 +21,18 @@ namespace ChatService.Controllers
         private readonly IProfileStore profileStore;
         private readonly ILogger<ConversationsController> logger;
         private readonly IMetricsClient metricsClient;
-        private readonly INotificationsService notificationsService;
+        private readonly INotificationService notificationService;
         private readonly AggregateMetric listConversationsControllerTimeMetric;
         private readonly AggregateMetric createConversationControllerTimeMetric;
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationsService notificationsService)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
-            this.notificationsService = notificationsService;
+            this.notificationService = notificationService;
             listConversationsControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListConversationsControllerTime");
             createConversationControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateConversationControllerTime");
         }
@@ -95,11 +95,8 @@ namespace ChatService.Controllers
 
                     logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
 
-                    var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id);
-                    foreach (var user in conversationDto.Participants)
-                    {
-                        await notificationsService.SendNotificationAsync(user, newConversationPayload);
-                    }
+                    var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id, conversationDto.Participants);
+                    await notificationService.SendNotificationAsync(newConversationPayload);
 
                     return Ok(conversation);
                 });
