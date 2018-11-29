@@ -10,12 +10,10 @@ namespace ChatService.Notifications
 {
     public class NotificationService : INotificationService
     {
-        private readonly HttpClient httpClient;
         private readonly IQueueClient queueClient;
 
         public NotificationService(IQueueClient queueClient)
         {
-            httpClient = new HttpClient();
             this.queueClient = queueClient;
         }
 
