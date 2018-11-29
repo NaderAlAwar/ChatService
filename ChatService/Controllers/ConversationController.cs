@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Logging;
+using ChatService.Notifications;
 using ChatService.Storage;
 using ChatService.Utils;
 using Microsoft.AspNetCore.Mvc;
@@ -18,14 +19,17 @@ namespace ChatService.Controllers
         private readonly IConversationsStore conversationsStore;
         private readonly ILogger<ConversationController> logger;
         private readonly IMetricsClient metricsClient;
+        private readonly INotificationsService notificationsService;
         private readonly AggregateMetric postMessageControllerTimeMetric;
         private readonly AggregateMetric listMessagesControllerTimeMetric;
 
-        public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient)
+        public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient,
+            INotificationsService notificationsService)
         {
             this.conversationsStore = conversationsStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
+            this.notificationsService = notificationsService;
             listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
             postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
@@ -71,11 +75,21 @@ namespace ChatService.Controllers
             {
                 return await postMessageControllerTimeMetric.TrackTime(async () =>
                 {
-                    var message = new Message(messageDto.Text, messageDto.SenderUsername, DateTime.UtcNow);
+                    var currentTime = DateTime.Now;
+                    var message = new Message(messageDto.Text, messageDto.SenderUsername, currentTime);
                     await conversationsStore.AddMessage(id, message);
 
                     logger.LogInformation(Events.ConversationMessageAdded,
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
+
+                    var conversation = await conversationsStore.GetConversation(messageDto.SenderUsername, id);
+                    var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id);
+
+                    foreach (var participant in conversation.Participants)
+                    {
+                        await notificationsService.SendNotificationAsync(participant, newMessagePayload);
+                    }
+                    
                     return Ok(message);
                 });
             }

@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Logging;
+using ChatService.Notifications;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Mvc;
@@ -19,16 +21,18 @@ namespace ChatService.Controllers
         private readonly IProfileStore profileStore;
         private readonly ILogger<ConversationsController> logger;
         private readonly IMetricsClient metricsClient;
+        private readonly INotificationsService notificationsService;
         private readonly AggregateMetric listConversationsControllerTimeMetric;
         private readonly AggregateMetric createConversationControllerTimeMetric;
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger, IMetricsClient metricsClient)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationsService notificationsService)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
+            this.notificationsService = notificationsService;
             listConversationsControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListConversationsControllerTime");
             createConversationControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateConversationControllerTime");
         }
@@ -85,10 +89,18 @@ namespace ChatService.Controllers
                 return await createConversationControllerTimeMetric.TrackTime(async () =>
                 {
                     string id = GenerateConversationId(conversationDto);
-                    Conversation conversation = new Conversation(id, conversationDto.Participants, DateTime.UtcNow);
+                    var currentTime = DateTime.UtcNow;
+                    Conversation conversation = new Conversation(id, conversationDto.Participants, currentTime);
                     await conversationsStore.AddConversation(conversation);
 
                     logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
+
+                    var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id);
+                    foreach (var user in conversationDto.Participants)
+                    {
+                        await notificationsService.SendNotificationAsync(user, newConversationPayload);
+                    }
+
                     return Ok(conversation);
                 });
             }

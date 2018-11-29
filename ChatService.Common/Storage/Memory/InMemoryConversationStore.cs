@@ -80,5 +80,10 @@ namespace ChatService.Storage.Memory
             }
             return Task.CompletedTask;
         }
+
+        public Task<Conversation> GetConversation(string username, string conversationId)
+        {
+            throw new System.NotImplementedException();
+        }
     }
 }
