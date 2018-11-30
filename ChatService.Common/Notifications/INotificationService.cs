@@ -6,8 +6,8 @@ using ChatService.DataContracts;
 
 namespace ChatService.Notifications
 {
-    public interface INotificationsService
+    public interface INotificationService
     {
-        Task SendNotificationAsync(string user, NotificationPayload payload);
+        Task SendNotificationAsync(NotificationPayload payload);
     }
 }

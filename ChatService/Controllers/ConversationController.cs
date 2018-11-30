@@ -19,17 +19,17 @@ namespace ChatService.Controllers
         private readonly IConversationsStore conversationsStore;
         private readonly ILogger<ConversationController> logger;
         private readonly IMetricsClient metricsClient;
-        private readonly INotificationsService notificationsService;
+        private readonly INotificationService notificationService;
         private readonly AggregateMetric postMessageControllerTimeMetric;
         private readonly AggregateMetric listMessagesControllerTimeMetric;
 
         public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient,
-            INotificationsService notificationsService)
+            INotificationService notificationService)
         {
             this.conversationsStore = conversationsStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
-            this.notificationsService = notificationsService;
+            this.notificationService = notificationService;
             listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
             postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
@@ -83,12 +83,10 @@ namespace ChatService.Controllers
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
 
                     var conversation = await conversationsStore.GetConversation(messageDto.SenderUsername, id);
-                    var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id);
+                    var usersToNotify = conversation.Participants;
+                    var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id, usersToNotify);
 
-                    foreach (var participant in conversation.Participants)
-                    {
-                        await notificationsService.SendNotificationAsync(participant, newMessagePayload);
-                    }
+                    await notificationService.SendNotificationAsync(newMessagePayload);
                     
                     return Ok(message);
                 });
