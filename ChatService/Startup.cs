@@ -39,7 +39,7 @@ namespace ChatService
 
             QueueClient queueClient = new QueueClient(notificationServiceSettings.ServiceBusConnectionString,
                 notificationServiceSettings.QueueName);
-            NotificationService notificationService = new NotificationService(queueClient);
+            ServiceBusNotificationServiceClient notificationService = new ServiceBusNotificationServiceClient(queueClient);
             services.AddSingleton<INotificationService>(context =>
                 new NotificationServiceMetricsDecorator(notificationService, context.GetRequiredService<IMetricsClient>()));
 

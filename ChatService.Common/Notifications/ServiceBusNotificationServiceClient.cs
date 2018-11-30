@@ -8,11 +8,11 @@ using Newtonsoft.Json;
 
 namespace ChatService.Notifications
 {
-    public class NotificationService : INotificationService
+    public class ServiceBusNotificationServiceClient : INotificationService
     {
         private readonly IQueueClient queueClient;
 
-        public NotificationService(IQueueClient queueClient)
+        public ServiceBusNotificationServiceClient(IQueueClient queueClient)
         {
             this.queueClient = queueClient;
         }

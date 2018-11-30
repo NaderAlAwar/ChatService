@@ -83,7 +83,7 @@ namespace ChatService.Controllers
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
 
                     var conversation = await conversationsStore.GetConversation(messageDto.SenderUsername, id);
-                    var usersToNotify = conversation.Participants.Except(new[]{messageDto.SenderUsername}).ToArray();
+                    var usersToNotify = conversation.Participants;
                     var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id, usersToNotify);
 
                     await notificationService.SendNotificationAsync(newMessagePayload);
