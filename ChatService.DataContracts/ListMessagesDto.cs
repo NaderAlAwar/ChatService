@@ -7,10 +7,7 @@ namespace ChatService.DataContracts
     {
         public ListMessagesDto(IEnumerable<ListMessagesItemDto> messages, string nextUri, string previousUri)
         {
-            Messages = new List<ListMessagesItemDto>();
-            if(messages != null) {
-                Messages = messages.ToList();
-            }
+            Messages = messages.ToList();
             NextUri = nextUri;
             PreviousUri = previousUri;
         }

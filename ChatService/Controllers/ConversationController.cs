@@ -48,8 +48,8 @@ namespace ChatService.Controllers
                     string newStartCt = messagesWindow.StartCt;
                     string newEndCt = messagesWindow.EndCt;
 
-                    string nextUri = (string.IsNullOrEmpty(newStartCt)) ? "" : $"api/conversations/{conversationId}?startCt={newStartCt}&limit={limit}";
-                    string previousUri = (string.IsNullOrEmpty(newEndCt)) ? "" : $"api/conversations/{conversationId}?endCt={newEndCt}&limit={limit}";
+                    string nextUri = (string.IsNullOrEmpty(newStartCt)) ? "" : $"api/conversation/{conversationId}?startCt={newStartCt}&limit={limit}";
+                    string previousUri = (string.IsNullOrEmpty(newEndCt)) ? "" : $"api/conversation/{conversationId}?endCt={newEndCt}&limit={limit}";
 
                     return Ok(new ListMessagesDto(dtos, nextUri, previousUri));
                 });
