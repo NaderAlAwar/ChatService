@@ -26,11 +26,11 @@ namespace ChatService.Controllers
         private readonly INotificationService notificationService;
         private readonly AggregateMetric listConversationsControllerTimeMetric;
         private readonly AggregateMetric createConversationControllerTimeMetric;
-        private readonly IAsyncPolicy faultTolerancePolicy;
+        private readonly ISyncPolicy faultTolerancePolicy;
 
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService, IAsyncPolicy faultTolerancePolicy)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService, ISyncPolicy faultTolerancePolicy)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
@@ -50,7 +50,7 @@ namespace ChatService.Controllers
                 return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
                     var conversationsWindow = await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await conversationsStore.ListConversations(username, startCt, endCt, limit)
                         );
 
@@ -100,7 +100,7 @@ namespace ChatService.Controllers
                     var currentTime = DateTime.UtcNow;
                     Conversation conversation = new Conversation(id, conversationDto.Participants, currentTime);
                     await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await conversationsStore.AddConversation(conversation)
                         );
 
@@ -108,7 +108,7 @@ namespace ChatService.Controllers
 
                     var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id, conversationDto.Participants);
                     await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await notificationService.SendNotificationAsync(newConversationPayload)
                         );
 

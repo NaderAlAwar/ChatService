@@ -43,15 +43,15 @@ namespace ChatService
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
 
-            TimeoutPolicy timeoutPolicy = Policy.TimeoutAsync(faultToleranceSettings.TimeoutLength, TimeoutStrategy.Pessimistic);
+            TimeoutPolicy timeoutPolicy = Policy.Timeout(faultToleranceSettings.TimeoutLength, TimeoutStrategy.Pessimistic);
             CircuitBreakerPolicy circuitBreakerPolicy = Policy
                 .Handle<Exception>()
-                .CircuitBreakerAsync(
+                .CircuitBreaker(
                     exceptionsAllowedBeforeBreaking: faultToleranceSettings.ExceptionsAllowedBeforeBreaking,
                     durationOfBreak: TimeSpan.FromMinutes(faultToleranceSettings.DurationOfBreakInMinutes)
                 );
             PolicyWrap policyWrap = Policy.Wrap(circuitBreakerPolicy, timeoutPolicy);
-            services.AddSingleton<IAsyncPolicy>(policyWrap);
+            services.AddSingleton<ISyncPolicy>(policyWrap);
 
             QueueClient queueClient = new QueueClient(notificationServiceSettings.ServiceBusConnectionString,
                 notificationServiceSettings.QueueName);

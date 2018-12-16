@@ -24,10 +24,10 @@ namespace ChatService.Controllers
         private readonly INotificationService notificationService;
         private readonly AggregateMetric postMessageControllerTimeMetric;
         private readonly AggregateMetric listMessagesControllerTimeMetric;
-        private readonly IAsyncPolicy faultTolerancePolicy;
+        private readonly ISyncPolicy faultTolerancePolicy;
 
         public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient,
-            INotificationService notificationService, IAsyncPolicy faultTolerancePolicy)
+            INotificationService notificationService, ISyncPolicy faultTolerancePolicy)
         {
             this.conversationsStore = conversationsStore;
             this.logger = logger;
@@ -46,7 +46,7 @@ namespace ChatService.Controllers
                 return await listMessagesControllerTimeMetric.TrackTime(async () =>
                 {
                     var messagesWindow = await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await conversationsStore.ListMessages(conversationId, startCt, endCt, limit)
                         );
                     List<ListMessagesItemDto> dtos =
@@ -85,7 +85,7 @@ namespace ChatService.Controllers
                     var currentTime = DateTime.Now;
                     var message = new Message(messageDto.Text, messageDto.SenderUsername, currentTime);
                     await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await conversationsStore.AddMessage(id, message)
                         );
 
@@ -97,7 +97,7 @@ namespace ChatService.Controllers
                     var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id, usersToNotify);
 
                     await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async() => await notificationService.SendNotificationAsync(newMessagePayload)
                         );
                     

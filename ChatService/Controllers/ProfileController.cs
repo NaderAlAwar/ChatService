@@ -19,9 +19,9 @@ namespace ChatService.Controllers
         private readonly IMetricsClient metricsClient;
         private readonly AggregateMetric getProfileControllerTimeMetric;
         private readonly AggregateMetric createProfileControllerTimeMetric;
-        private readonly IAsyncPolicy faultTolerancePolicy;
+        private readonly ISyncPolicy faultTolerancePolicy;
 
-        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient, IAsyncPolicy faultTolerancePolicy)
+        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient, ISyncPolicy faultTolerancePolicy)
         {
             this.profileStore = profileStore;
             this.logger = logger;
@@ -40,7 +40,7 @@ namespace ChatService.Controllers
                 return await createProfileControllerTimeMetric.TrackTime(async () =>
                 {
                     await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await profileStore.AddProfile(profile)
                         );
                     logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
@@ -80,7 +80,7 @@ namespace ChatService.Controllers
                 return await getProfileControllerTimeMetric.TrackTime(async () =>
                 {
                     UserProfile profile = await faultTolerancePolicy
-                        .ExecuteAsync(
+                        .Execute(
                             async () => await profileStore.GetProfile(username)
                         );
                     return Ok(profile);

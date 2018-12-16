@@ -25,7 +25,7 @@ namespace ChatServiceTests
         readonly Mock<IProfileStore> profileStoreMock = new Mock<IProfileStore>();
         readonly Mock<ILogger<ProfileController>> loggerMock = new Mock<ILogger<ProfileController>>();
         readonly Mock<IMetricsClient> metricsMock = new Mock<IMetricsClient>();
-        private readonly Mock<IAsyncPolicy> policyMock = new Mock<IAsyncPolicy>();
+        private readonly Mock<ISyncPolicy> policyMock = new Mock<ISyncPolicy>();
 
         private CreateProfileDto createProfileDto = new CreateProfileDto
         {
