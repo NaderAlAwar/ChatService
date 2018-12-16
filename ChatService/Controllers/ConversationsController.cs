@@ -11,6 +11,8 @@ using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.Wrap;
 
 namespace ChatService.Controllers
 {
@@ -24,15 +26,18 @@ namespace ChatService.Controllers
         private readonly INotificationService notificationService;
         private readonly AggregateMetric listConversationsControllerTimeMetric;
         private readonly AggregateMetric createConversationControllerTimeMetric;
+        private readonly IAsyncPolicy faultTolerancePolicy;
+
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
-            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService)
+            ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService, IAsyncPolicy faultTolerancePolicy)
         {
             this.conversationsStore = conversationsStore;
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
             this.notificationService = notificationService;
+            this.faultTolerancePolicy = faultTolerancePolicy;
             listConversationsControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListConversationsControllerTime");
             createConversationControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateConversationControllerTime");
         }
@@ -44,7 +49,10 @@ namespace ChatService.Controllers
             {
                 return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
-                    var conversationsWindow = await conversationsStore.ListConversations(username, startCt, endCt, limit);
+                    var conversationsWindow = await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await conversationsStore.ListConversations(username, startCt, endCt, limit)
+                        );
 
                     var conversationList = new List<ListConversationsItemDto>();
                     foreach (var conversation in conversationsWindow.Conversations)
@@ -91,12 +99,18 @@ namespace ChatService.Controllers
                     string id = GenerateConversationId(conversationDto);
                     var currentTime = DateTime.UtcNow;
                     Conversation conversation = new Conversation(id, conversationDto.Participants, currentTime);
-                    await conversationsStore.AddConversation(conversation);
+                    await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await conversationsStore.AddConversation(conversation)
+                        );
 
                     logger.LogInformation(Events.ConversationCreated, "Conversation with id {conversationId} was created");
 
                     var newConversationPayload = new NotificationPayload(currentTime, "ConversationAdded", id, conversationDto.Participants);
-                    await notificationService.SendNotificationAsync(newConversationPayload);
+                    await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await notificationService.SendNotificationAsync(newConversationPayload)
+                        );
 
                     return Ok(conversation);
                 });

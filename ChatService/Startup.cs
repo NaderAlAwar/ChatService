@@ -1,4 +1,5 @@
 ﻿using System;
+using ChatService.FaultTolerance;
 using ChatService.Notifications;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
@@ -10,6 +11,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
+using Polly.Wrap;
 
 namespace ChatService
 {
@@ -29,6 +34,7 @@ namespace ChatService
 
             var azureStorageSettings = GetSettings<AzureStorageSettings>();
             var notificationServiceSettings = GetSettings<NotificationServiceSettings>();
+            var faultToleranceSettings = GetSettings<FaultToleranceSettings>();
 
             services.AddSingleton<IMetricsClient>(context =>
             {
@@ -36,6 +42,16 @@ namespace ChatService
                     TimeSpan.FromSeconds(15));
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
+
+            TimeoutPolicy timeoutPolicy = Policy.TimeoutAsync(faultToleranceSettings.TimeoutLength, TimeoutStrategy.Pessimistic);
+            CircuitBreakerPolicy circuitBreakerPolicy = Policy
+                .Handle<Exception>()
+                .CircuitBreakerAsync(
+                    exceptionsAllowedBeforeBreaking: faultToleranceSettings.ExceptionsAllowedBeforeBreaking,
+                    durationOfBreak: TimeSpan.FromMinutes(faultToleranceSettings.DurationOfBreakInMinutes)
+                );
+            PolicyWrap policyWrap = Policy.Wrap(circuitBreakerPolicy, timeoutPolicy);
+            services.AddSingleton<IAsyncPolicy>(policyWrap);
 
             QueueClient queueClient = new QueueClient(notificationServiceSettings.ServiceBusConnectionString,
                 notificationServiceSettings.QueueName);

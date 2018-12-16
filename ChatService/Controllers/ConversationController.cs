@@ -10,6 +10,8 @@ using ChatService.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.Wrap;
 
 namespace ChatService.Controllers
 {
@@ -22,14 +24,16 @@ namespace ChatService.Controllers
         private readonly INotificationService notificationService;
         private readonly AggregateMetric postMessageControllerTimeMetric;
         private readonly AggregateMetric listMessagesControllerTimeMetric;
+        private readonly IAsyncPolicy faultTolerancePolicy;
 
         public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient,
-            INotificationService notificationService)
+            INotificationService notificationService, IAsyncPolicy faultTolerancePolicy)
         {
             this.conversationsStore = conversationsStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
             this.notificationService = notificationService;
+            this.faultTolerancePolicy = faultTolerancePolicy;
             listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
             postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
@@ -41,7 +45,10 @@ namespace ChatService.Controllers
             {
                 return await listMessagesControllerTimeMetric.TrackTime(async () =>
                 {
-                    var messagesWindow = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);
+                    var messagesWindow = await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await conversationsStore.ListMessages(conversationId, startCt, endCt, limit)
+                        );
                     List<ListMessagesItemDto> dtos =
                         (messagesWindow.Messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime))).ToList();
                         
@@ -77,7 +84,10 @@ namespace ChatService.Controllers
                 {
                     var currentTime = DateTime.Now;
                     var message = new Message(messageDto.Text, messageDto.SenderUsername, currentTime);
-                    await conversationsStore.AddMessage(id, message);
+                    await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await conversationsStore.AddMessage(id, message)
+                        );
 
                     logger.LogInformation(Events.ConversationMessageAdded,
                         "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
@@ -86,7 +96,10 @@ namespace ChatService.Controllers
                     var usersToNotify = conversation.Participants;
                     var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id, usersToNotify);
 
-                    await notificationService.SendNotificationAsync(newMessagePayload);
+                    await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async() => await notificationService.SendNotificationAsync(newMessagePayload)
+                        );
                     
                     return Ok(message);
                 });

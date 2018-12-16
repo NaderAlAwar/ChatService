@@ -19,6 +19,7 @@
     <PackageReference Include="Microsoft.Diagnostics.EventFlow.Outputs.ApplicationInsights" Version="1.4.0" />
     <PackageReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Design" Version="2.1.1" />
     <PackageReference Include="MicrosoftLogging.Metrics" Version="1.0.0" />
+    <PackageReference Include="Polly" Version="6.1.2" />
   </ItemGroup>
 
   <ItemGroup>

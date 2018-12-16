@@ -6,6 +6,8 @@ using ChatService.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.Wrap;
 
 namespace ChatService.Controllers
 {
@@ -17,12 +19,14 @@ namespace ChatService.Controllers
         private readonly IMetricsClient metricsClient;
         private readonly AggregateMetric getProfileControllerTimeMetric;
         private readonly AggregateMetric createProfileControllerTimeMetric;
+        private readonly IAsyncPolicy faultTolerancePolicy;
 
-        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient)
+        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient, IAsyncPolicy faultTolerancePolicy)
         {
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
+            this.faultTolerancePolicy = faultTolerancePolicy;
             getProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("GetProfileControllerTime");
             createProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateProfileControllerTime");
         }
@@ -35,7 +39,10 @@ namespace ChatService.Controllers
             {
                 return await createProfileControllerTimeMetric.TrackTime(async () =>
                 {
-                    await profileStore.AddProfile(profile);
+                    await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await profileStore.AddProfile(profile)
+                        );
                     logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
                         request.Username);
                     return Created(request.Username, profile);
@@ -72,7 +79,10 @@ namespace ChatService.Controllers
             {
                 return await getProfileControllerTimeMetric.TrackTime(async () =>
                 {
-                    UserProfile profile = await profileStore.GetProfile(username);
+                    UserProfile profile = await faultTolerancePolicy
+                        .ExecuteAsync(
+                            async () => await profileStore.GetProfile(username)
+                        );
                     return Ok(profile);
                 });
             }
