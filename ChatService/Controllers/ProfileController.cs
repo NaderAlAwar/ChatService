@@ -92,7 +92,7 @@ namespace ChatService.Controllers
             catch (Exception e)
             {
                 logger.LogError(e, "Error occured while retrieving a user profile");
-                return StatusCode(500, "Failed to retrieve profile of user {username}");
+                return StatusCode(500, $"Failed to retrieve profile of user {username}");
             }
         }
     }
