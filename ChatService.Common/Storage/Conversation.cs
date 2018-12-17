@@ -24,14 +24,5 @@ namespace ChatService.Storage
                    string.Join(",", Participants) == string.Join(",", conversation.Participants) &&
                    LastModifiedDateUtc == conversation.LastModifiedDateUtc;
         }
-
-        public override int GetHashCode()
-        {
-            var hashCode = 333940031;
-            hashCode = hashCode * -1521134295 + EqualityComparer<string>.Default.GetHashCode(Id);
-            hashCode = hashCode * -1521134295 + EqualityComparer<string[]>.Default.GetHashCode(Participants);
-            hashCode = hashCode * -1521134295 + LastModifiedDateUtc.GetHashCode();
-            return hashCode;
-        }
     }
 }
