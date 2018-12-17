@@ -1,7 +1,9 @@
 ﻿using System;
+using ChatService.FaultTolerance;
 using ChatService.Notifications;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
+using ChatService.Storage.FaultTolerance;
 using ChatService.Storage.Metrics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
@@ -10,6 +12,10 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.CircuitBreaker;
+using Polly.Timeout;
+using Polly.Wrap;
 
 namespace ChatService
 {
@@ -29,6 +35,7 @@ namespace ChatService
 
             var azureStorageSettings = GetSettings<AzureStorageSettings>();
             var notificationServiceSettings = GetSettings<NotificationServiceSettings>();
+            var faultToleranceSettings = GetSettings<FaultToleranceSettings>();
 
             services.AddSingleton<IMetricsClient>(context =>
             {
@@ -37,26 +44,52 @@ namespace ChatService
                 return metricsClientFactory.CreateMetricsClient<LoggerMetricsClient>();
             });
 
+            TimeoutPolicy timeoutPolicy = Policy.Timeout(faultToleranceSettings.TimeoutLength, TimeoutStrategy.Pessimistic);
+            CircuitBreakerPolicy circuitBreakerPolicy = Policy
+                .Handle<Exception>()
+                .CircuitBreaker(
+                    exceptionsAllowedBeforeBreaking: faultToleranceSettings.ExceptionsAllowedBeforeBreaking,
+                    durationOfBreak: TimeSpan.FromMinutes(faultToleranceSettings.DurationOfBreakInMinutes)
+                );
+            PolicyWrap policyWrap = Policy.Wrap(circuitBreakerPolicy, timeoutPolicy);
+            services.AddSingleton<ISyncPolicy>(policyWrap);
+
             QueueClient queueClient = new QueueClient(notificationServiceSettings.ServiceBusConnectionString,
                 notificationServiceSettings.QueueName);
             ServiceBusNotificationServiceClient notificationService = new ServiceBusNotificationServiceClient(queueClient);
             services.AddSingleton<INotificationService>(context =>
-                new NotificationServiceMetricsDecorator(notificationService, context.GetRequiredService<IMetricsClient>()));
+                new NotificationServiceMetricsDecorator(
+                    new NotificationServiceFaultToleranceDecorator(
+                        notificationService,
+                        context.GetRequiredService<ISyncPolicy>()),
+                    context.GetRequiredService<IMetricsClient>()));
 
             AzureCloudTable profileCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.ProfilesTableName);
             AzureTableProfileStore profileStore = new AzureTableProfileStore(profileCloudTable);
             services.AddSingleton<IProfileStore>(context => 
-                new ProfileStoreMetricsDecorator(profileStore, context.GetRequiredService<IMetricsClient>()));
+                new ProfileStoreMetricsDecorator(
+                    new ProfileStoreFaultToleranceDecorator(
+                        profileStore,
+                        context.GetRequiredService<ISyncPolicy>()),
+                    context.GetRequiredService<IMetricsClient>()));
 
             AzureCloudTable messagesCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.MessagesTableName);
             AzureTableMessagesStore messagesStore = new AzureTableMessagesStore(messagesCloudTable);
             services.AddSingleton<IMessagesStore>(context => 
-                new MessagesStoreMetricsDecorator(messagesStore, context.GetRequiredService<IMetricsClient>()));
+                new MessagesStoreMetricsDecorator(
+                    new MessagesStoreFaultToleranceDecorator(
+                        messagesStore,
+                        context.GetRequiredService<ISyncPolicy>()),
+                    context.GetRequiredService<IMetricsClient>()));
 
             AzureCloudTable conversationsCloudTable = new AzureCloudTable(azureStorageSettings.ConnectionString, azureStorageSettings.UsersTableName);
             AzureTableConversationsStore conversationsStore = new AzureTableConversationsStore(conversationsCloudTable, messagesStore);
             services.AddSingleton<IConversationsStore>(context => 
-                new ConversationStoreMetricsDecorator(conversationsStore, context.GetRequiredService<IMetricsClient>()));
+                new ConversationStoreMetricsDecorator(
+                    new ConversationsStoreFaultToleranceDecorator(
+                        conversationsStore,
+                        context.GetRequiredService<ISyncPolicy>()),
+                    context.GetRequiredService<IMetricsClient>()));
 
             services.AddLogging();
             services.AddMvc();

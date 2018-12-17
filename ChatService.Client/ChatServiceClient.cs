@@ -26,6 +26,52 @@ namespace ChatService.Client
             this.httpClient = httpClient;
         }
 
+        public async Task<string> GetVersion()
+        {
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync("api/application/version");
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to get version", response.ReasonPhrase, response.StatusCode);
+                }
+
+                string content = await response.Content.ReadAsStringAsync();
+                return content;
+            }
+            catch (Exception e)
+            {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
+                throw new ChatServiceException("Failed to reach chat service", e, "Internal Server Error",
+                    HttpStatusCode.InternalServerError);
+            }
+        }
+
+        public async Task<string> GetEnvironment()
+        {
+            try
+            {
+                HttpResponseMessage response = await httpClient.GetAsync("api/application/environment");
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to get version", response.ReasonPhrase, response.StatusCode);
+                }
+
+                string content = await response.Content.ReadAsStringAsync();
+                return content;
+            }
+            catch (Exception e)
+            {
+                // make sure we don't catch our own exception we threw above
+                if (e is ChatServiceException) throw;
+
+                throw new ChatServiceException("Failed to reach chat service", e, "Internal Server Error",
+                    HttpStatusCode.InternalServerError);
+            }
+        }
+
         public async Task CreateProfile(CreateProfileDto profileDto)
         {
             try

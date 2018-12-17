@@ -6,6 +6,8 @@ using ChatService.Storage;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.Wrap;
 
 namespace ChatService.Controllers
 {

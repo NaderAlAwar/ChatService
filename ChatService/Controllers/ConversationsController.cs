@@ -11,6 +11,8 @@ using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
+using Polly;
+using Polly.Wrap;
 
 namespace ChatService.Controllers
 {
@@ -24,6 +26,7 @@ namespace ChatService.Controllers
         private readonly INotificationService notificationService;
         private readonly AggregateMetric listConversationsControllerTimeMetric;
         private readonly AggregateMetric createConversationControllerTimeMetric;
+
 
         public ConversationsController(IConversationsStore conversationsStore, IProfileStore profileStore,
             ILogger<ConversationsController> logger, IMetricsClient metricsClient, INotificationService notificationService)
@@ -44,7 +47,8 @@ namespace ChatService.Controllers
             {
                 return await listConversationsControllerTimeMetric.TrackTime(async () =>
                 {
-                    var conversationsWindow = await conversationsStore.ListConversations(username, startCt, endCt, limit);
+                    var conversationsWindow =
+                        await conversationsStore.ListConversations(username, startCt, endCt, limit);
 
                     var conversationList = new List<ListConversationsItemDto>();
                     foreach (var conversation in conversationsWindow.Conversations)

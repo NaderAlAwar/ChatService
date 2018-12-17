@@ -10,6 +10,7 @@ using ChatService.DataContracts;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Metrics;
 using ChatServiceTests.Utils;
+using Polly;
 
 namespace ChatServiceTests
 {
