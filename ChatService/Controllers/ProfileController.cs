@@ -19,14 +19,12 @@ namespace ChatService.Controllers
         private readonly IMetricsClient metricsClient;
         private readonly AggregateMetric getProfileControllerTimeMetric;
         private readonly AggregateMetric createProfileControllerTimeMetric;
-        private readonly ISyncPolicy faultTolerancePolicy;
 
-        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient, ISyncPolicy faultTolerancePolicy)
+        public ProfileController(IProfileStore profileStore, ILogger<ProfileController> logger, IMetricsClient metricsClient)
         {
             this.profileStore = profileStore;
             this.logger = logger;
             this.metricsClient = metricsClient;
-            this.faultTolerancePolicy = faultTolerancePolicy;
             getProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("GetProfileControllerTime");
             createProfileControllerTimeMetric = this.metricsClient.CreateAggregateMetric("CreateProfileControllerTime");
         }
@@ -39,10 +37,7 @@ namespace ChatService.Controllers
             {
                 return await createProfileControllerTimeMetric.TrackTime(async () =>
                 {
-                    await faultTolerancePolicy
-                        .Execute(
-                            async () => await profileStore.AddProfile(profile)
-                        );
+                    await profileStore.AddProfile(profile);
                     logger.LogInformation(Events.ProfileCreated, "A Profile has been added for user {username}",
                         request.Username);
                     return Created(request.Username, profile);
@@ -79,10 +74,7 @@ namespace ChatService.Controllers
             {
                 return await getProfileControllerTimeMetric.TrackTime(async () =>
                 {
-                    UserProfile profile = await faultTolerancePolicy
-                        .Execute(
-                            async () => await profileStore.GetProfile(username)
-                        );
+                    UserProfile profile = await profileStore.GetProfile(username);
                     return Ok(profile);
                 });
             }
