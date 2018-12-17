@@ -70,6 +70,24 @@ namespace ChatServiceTests
         }
 
         [TestMethod]
+        [DataRow(null, "foo")]
+        [DataRow("", "foo")]
+        [DataRow("foo", null)]
+        [DataRow("foo", "")]
+        public async Task GetConversation_InvalidConversation(string username, string conversationId)
+        {
+            try
+            {
+                await store.GetConversation(username, conversationId);
+
+                Assert.Fail($"Expected {nameof(ArgumentException)} was not thrown");
+            }
+            catch (ArgumentException)
+            {
+            }
+        }
+
+        [TestMethod]
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task AddConversation_NullConversation()
         {

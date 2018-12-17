@@ -43,6 +43,13 @@ namespace ChatServiceTests
         }
 
         [TestMethod]
+        [ExpectedException(typeof(ConversationNotFoundException))]
+        public async Task GetConversation_ConversationDoesNotExist()
+        {
+            await store.GetConversation(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+        }
+
+        [TestMethod]
         public async Task AddListMessages()
         {
             string conversationId = RandomString();
