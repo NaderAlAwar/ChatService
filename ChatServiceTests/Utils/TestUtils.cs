@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
 using System.Net;
 using System.Text;
@@ -11,8 +10,6 @@ namespace ChatServiceTests.Utils
 {
     public static class TestUtils
     {
-        private static readonly Random random = new Random();
-
         /// <summary>
         /// Used to avoid duplicating this same code in several tests
         /// </summary>

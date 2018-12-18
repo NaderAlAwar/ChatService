@@ -48,5 +48,15 @@ namespace ChatServiceTests
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 409 }, "Message already exists", null));
             await store.AddMessage("conversationId", new Message("text", "username", DateTime.UtcNow));
         }
+
+        [DataRow(null)]
+        [DataRow("")]
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task AddMessage_InvalidSenderUsername(string username)
+        {
+            await store.AddMessage(Guid.NewGuid().ToString(),
+                new Message(Guid.NewGuid().ToString(), username, DateTime.Now));
+        }
     }
 }

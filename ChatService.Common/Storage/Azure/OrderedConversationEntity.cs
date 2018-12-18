@@ -56,10 +56,5 @@ namespace ChatService.Storage.Azure
         {
             return ToDateTime(RowKey);
         }
-
-        public string[] GetParticipants()
-        {
-            return Participants.Split(',');
-        }
     }
 }

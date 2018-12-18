@@ -60,13 +60,13 @@ namespace ChatService.Controllers
             {
                 logger.LogError(Events.StorageError, e, 
                     "Could not reach storage to list messages, conversationId {conversationId}", conversationId);
-                return StatusCode(503);
+                return StatusCode(503, $"Could not reach storage to list messages, conversationId {conversationId}");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, 
                     "Failed to list messages of conversation {conversationId}", conversationId);
-                return StatusCode(500);
+                return StatusCode(500, $"Failed to list messages of conversation {conversationId}");
             }
         }
 
@@ -97,13 +97,13 @@ namespace ChatService.Controllers
             {
                 logger.LogError(Events.StorageError, e, 
                     "Could not reach storage to add message, conversationId {conversationId}", id);
-                return StatusCode(503);
+                return StatusCode(503, $"Could not reach storage to add message, conversationId {id}");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, 
                     "Failed to add message to conversation, conversationId: {conversationId}", id);
-                return StatusCode(500);
+                return StatusCode(500, $"Failed to add message to conversation, conversationId: {id}");
             }
         }
     }

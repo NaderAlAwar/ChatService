@@ -49,6 +49,22 @@ namespace ChatServiceTests
             }
         }
 
+        [DataRow("")]
+        [DataRow(null)]
+        [TestMethod]
+        [ExpectedException(typeof(ArgumentNullException))]
+        public async Task DeleteInvalidProfile(string username)
+        {
+            await store.TryDelete(username);
+        }
+
+        [TestMethod]
+        [ExpectedException(typeof(StorageErrorException))]
+        public async Task DeleteProfile_StorageIsUnavailable()
+        {
+            await store.TryDelete("foo");
+        }
+
         [TestMethod]
         [ExpectedException(typeof(StorageErrorException))]
         public async Task GetProfile_StorageIsUnavailable()

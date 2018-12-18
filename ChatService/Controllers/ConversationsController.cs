@@ -76,12 +76,12 @@ namespace ChatService.Controllers
             catch (StorageErrorException e)
             {
                 logger.LogError(Events.StorageError, e, "Could not reach storage to list user conversations, username {username}", username);
-                return StatusCode(503);
+                return StatusCode(503, $"Could not reach storage to list user conversations, username {username}");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, "Failed to retrieve conversations for user {username}", username);
-                return StatusCode(500);
+                return StatusCode(500, $"Failed to retrieve conversations for user {username}");
             }
         }
 
@@ -108,12 +108,12 @@ namespace ChatService.Controllers
             catch (StorageErrorException e)
             {
                 logger.LogError(Events.StorageError, e, "Could not reach storage to add user conversation");
-                return StatusCode(503);
+                return StatusCode(503, "Could not reach storage to add user conversation");
             }
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, "Failed to add conversation");
-                return StatusCode(500);
+                return StatusCode(500, "Failed to add conversation");
             }
         }
 
