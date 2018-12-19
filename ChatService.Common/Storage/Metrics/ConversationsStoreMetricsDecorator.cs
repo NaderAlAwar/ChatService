@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using ChatService.Storage.Azure;
@@ -38,9 +39,9 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, messageId, message));
         }
 
-        public Task<Message> GetMessage(string conversationId, string messageId)
+        public Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
         {
-            return getMessageMetric.TrackTime(() => store.GetMessage(conversationId, messageId));
+            return getMessageMetric.TrackTime(() => store.TryGetMessage(conversationId, messageId));
         }
 
         public Task<SortedConversationsWindow> ListConversations(string username, string startCt, string endCt, int limit)

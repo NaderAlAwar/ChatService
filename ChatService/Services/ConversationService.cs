@@ -37,14 +37,11 @@ namespace ChatService.Services
 
         public async Task<Message> HandlePostMessageRequest(string conversationId, SendMessageDtoV2 messageDto)
         {
-            try
+            var matchingMessage = await conversationsStore.TryGetMessage(conversationId, messageDto.MessageId);
+
+            if (matchingMessage.Item1 == true) // if the message was found in storage
             {
-                var matchingMessage = await conversationsStore.GetMessage(conversationId, messageDto.MessageId);
-                return matchingMessage;
-            }
-            catch (MessageNotFoundException e)
-            {
-               // means the message is new
+                return matchingMessage.Item2;
             }
 
             var currentTime = DateTime.Now;

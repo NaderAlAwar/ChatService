@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ChatService.Storage
@@ -9,6 +10,6 @@ namespace ChatService.Storage
 
         Task AddMessage(string conversationId, string messageId, Message message);
 
-        Task<Message> GetMessage(string conversationId, string messageId);
+        Task<Tuple<bool, Message>> TryGetMessage(string conversationId, string messageId);
     }
 }

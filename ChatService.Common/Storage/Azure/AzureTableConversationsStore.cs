@@ -156,7 +156,7 @@ namespace ChatService.Storage.Azure
             await Task.WhenAll(tasks);
         }
 
-        public async Task<Message> GetMessage(string conversationId, string messageId)
+        public async Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
             {
@@ -168,7 +168,7 @@ namespace ChatService.Storage.Azure
                 throw new ArgumentNullException(nameof(messageId));
             }
 
-            return await messagesStore.GetMessage(conversationId, messageId);
+            return await messagesStore.TryGetMessage(conversationId, messageId);
         }
 
         private async Task UpdateConversationModifiedDateForUser(string username, string conversationId, Message message)

@@ -68,7 +68,7 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageReturns503WhenStorageIsUnavailable()
         {
-            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+            conversationsStoreMock.Setup(store => store.TryGetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
             SendMessageDto newMessage = new SendMessageDto(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -82,7 +82,7 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageReturns500WhenUnknownExceptionIsThrown()
         {
-            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+            conversationsStoreMock.Setup(store => store.TryGetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new UnknownException());
 
             SendMessageDto newMessage = new SendMessageDto(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -96,7 +96,7 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageV2Returns503WhenStorageIsUnavailable()
         {
-            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+            conversationsStoreMock.Setup(store => store.TryGetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
             SendMessageDtoV2 newMessage = new SendMessageDtoV2(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
@@ -110,7 +110,7 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageV2Returns500WhenUnknownExceptionIsThrown()
         {
-            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+            conversationsStoreMock.Setup(store => store.TryGetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new UnknownException());
 
             SendMessageDtoV2 newMessage = new SendMessageDtoV2(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());

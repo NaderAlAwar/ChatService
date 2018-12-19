@@ -1,4 +1,5 @@
-﻿using System.Threading.Tasks;
+﻿using System;
+using System.Threading.Tasks;
 using Polly;
 
 namespace ChatService.Storage.FaultTolerance
@@ -28,10 +29,10 @@ namespace ChatService.Storage.FaultTolerance
             );
         }
 
-        public Task<Message> GetMessage(string conversationId, string messageId)
+        public Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
         {
             return faultTolerancePolicy.Execute(
-                async () => await store.GetMessage(conversationId, messageId)
+                async () => await store.TryGetMessage(conversationId, messageId)
             );
         }
     }
