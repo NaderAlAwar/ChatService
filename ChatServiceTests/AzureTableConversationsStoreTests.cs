@@ -105,20 +105,22 @@ namespace ChatServiceTests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task AddMessage_NullMessage()
         {
-            await store.AddMessage("foo", null);
+            await store.AddMessage("foo", "bar", null);
         }
 
-        [DataRow("", "bla bla", "foo")]
-        [DataRow(null, "bla bla", "foo")]
-        [DataRow("conversationId", "bla bla", null)]
-        [DataRow("conversationId", "bla bla", "")]
+        [DataRow("", "messageId", "bla bla", "foo")]
+        [DataRow(null, "messageId", "bla bla", "foo")]
+        [DataRow("conversationId", "", "bla bla", "foo")]
+        [DataRow("conversationId", null, "bla bla", "foo")]
+        [DataRow("conversationId", "messageId", "bla bla", null)]
+        [DataRow("conversationId", "messageId", "bla bla", "")]
         [TestMethod]
-        public async Task AddMessage_InvalidMessage(string conversationId, string text, string sender)
+        public async Task AddMessage_InvalidMessage(string conversationId, string messageId, string text, string sender)
         {
             try
             {
                 var message = new Message(text, sender, DateTime.UtcNow);
-                await store.AddMessage(conversationId, message);
+                await store.AddMessage(conversationId, messageId, message);
 
                 Assert.Fail($"Expected {nameof(ArgumentException)} was not thrown");
             }
@@ -131,7 +133,7 @@ namespace ChatServiceTests
         [ExpectedException(typeof(StorageErrorException))]
         public async Task AddMessage_ConversationStorageIsUnavailable()
         {
-            await store.AddMessage("conversationId", new Message("bla bla", "foo", DateTime.UtcNow));
+            await store.AddMessage("conversationId", "messageId", new Message("bla bla", "foo", DateTime.UtcNow));
         }
     }
 }

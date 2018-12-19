@@ -278,5 +278,30 @@ namespace ChatService.Client
                     "Internal Server Error", HttpStatusCode.InternalServerError);
             }
         }
+
+        public async Task SendMessage(string conversationId, SendMessageDtoV2 messageDto)
+        {
+            try
+            {
+                HttpResponseMessage response =
+                    await httpClient.PostAsync($"api/v2/conversation/{conversationId}",
+                        new StringContent(JsonConvert.SerializeObject(messageDto), Encoding.UTF8, "application/json"));
+
+                if (!response.IsSuccessStatusCode)
+                {
+                    throw new ChatServiceException("Failed to retrieve user profile", response.ReasonPhrase, response.StatusCode);
+                }
+            }
+            catch (JsonException e)
+            {
+                throw new ChatServiceException("Failed to deserialize the response", e,
+                    "Serialization Exception", HttpStatusCode.InternalServerError);
+            }
+            catch (Exception e)
+            {
+                throw new ChatServiceException("Failed to reach chat service", e,
+                    "Internal Server Error", HttpStatusCode.InternalServerError);
+            }
+        }
     }
 }

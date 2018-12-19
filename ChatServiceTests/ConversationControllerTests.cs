@@ -8,10 +8,10 @@ using Moq;
 using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Notifications;
+using ChatService.Services;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging.Metrics;
 using ChatServiceTests.Utils;
-using Polly;
 
 namespace ChatServiceTests
 {
@@ -24,15 +24,21 @@ namespace ChatServiceTests
     public class ConversationControllerTests
     {
         readonly Mock<IConversationsStore> conversationsStoreMock = new Mock<IConversationsStore>();
-        readonly Mock<ILogger<ConversationController>> loggerMock = new Mock<ILogger<ConversationController>>();
+        readonly Mock<ILogger<ConversationService>> serviceLoggerMock = new Mock<ILogger<ConversationService>>();
+        readonly Mock<ILogger<ConversationController>> controllerLoggerMock = new Mock<ILogger<ConversationController>>();
         readonly Mock<IMetricsClient> metricsMock = new Mock<IMetricsClient>();
         readonly Mock<INotificationService> notificationServiceMock = new Mock<INotificationService>();
+        private ConversationService conversationService;
+        private ConversationController conversationController;
 
         [TestInitialize]
         public void TestInitialize()
         {
             metricsMock.Setup(metricsMock => metricsMock.CreateAggregateMetric(It.IsAny<string>()))
                 .Returns(new AggregateMetric("TestMetric", metricsMock.Object, TimeSpan.Zero));
+            conversationService = new ConversationService(conversationsStoreMock.Object, serviceLoggerMock.Object,
+                notificationServiceMock.Object);
+            conversationController = new ConversationController(controllerLoggerMock.Object, metricsMock.Object, conversationService);
         }
 
         [TestMethod]
@@ -41,7 +47,6 @@ namespace ChatServiceTests
             conversationsStoreMock.Setup(store => store.ListMessages(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
-            var conversationController = new ConversationController(conversationsStoreMock.Object, loggerMock.Object, metricsMock.Object, notificationServiceMock.Object);
             IActionResult result = await conversationController.ListMessages(
                 Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 0);
 
@@ -54,7 +59,6 @@ namespace ChatServiceTests
             conversationsStoreMock.Setup(store => store.ListMessages(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
                 .ThrowsAsync(new UnknownException());
 
-            var conversationController = new ConversationController(conversationsStoreMock.Object, loggerMock.Object, metricsMock.Object, notificationServiceMock.Object);
             IActionResult result = await conversationController.ListMessages(
                 Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), 0);
 
@@ -64,12 +68,11 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageReturns503WhenStorageIsUnavailable()
         {
-            conversationsStoreMock.Setup(store => store.AddMessage(It.IsAny<string>(), It.IsAny<Message>()))
+            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new StorageErrorException("Test Failure"));
 
             SendMessageDto newMessage = new SendMessageDto(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
 
-            var conversationController = new ConversationController(conversationsStoreMock.Object, loggerMock.Object, metricsMock.Object, notificationServiceMock.Object);
             IActionResult result = await conversationController.PostMessage(
                 Guid.NewGuid().ToString(), newMessage);
 
@@ -79,12 +82,39 @@ namespace ChatServiceTests
         [TestMethod]
         public async Task PostMessageReturns500WhenUnknownExceptionIsThrown()
         {
-            conversationsStoreMock.Setup(store => store.AddMessage(It.IsAny<string>(), It.IsAny<Message>()))
+            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
                 .ThrowsAsync(new UnknownException());
 
             SendMessageDto newMessage = new SendMessageDto(Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
 
-            var conversationController = new ConversationController(conversationsStoreMock.Object, loggerMock.Object, metricsMock.Object, notificationServiceMock.Object);
+            IActionResult result = await conversationController.PostMessage(
+                Guid.NewGuid().ToString(), newMessage);
+
+            TestUtils.AssertStatusCode(HttpStatusCode.InternalServerError, result);
+        }
+
+        [TestMethod]
+        public async Task PostMessageV2Returns503WhenStorageIsUnavailable()
+        {
+            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+                .ThrowsAsync(new StorageErrorException("Test Failure"));
+
+            SendMessageDtoV2 newMessage = new SendMessageDtoV2(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
+            IActionResult result = await conversationController.PostMessage(
+                Guid.NewGuid().ToString(), newMessage);
+
+            TestUtils.AssertStatusCode(HttpStatusCode.ServiceUnavailable, result);
+        }
+
+        [TestMethod]
+        public async Task PostMessageV2Returns500WhenUnknownExceptionIsThrown()
+        {
+            conversationsStoreMock.Setup(store => store.GetMessage(It.IsAny<string>(), It.IsAny<string>()))
+                .ThrowsAsync(new UnknownException());
+
+            SendMessageDtoV2 newMessage = new SendMessageDtoV2(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(), Guid.NewGuid().ToString());
+
             IActionResult result = await conversationController.PostMessage(
                 Guid.NewGuid().ToString(), newMessage);
 
