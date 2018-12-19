@@ -120,7 +120,7 @@ namespace ChatService.Storage.Azure
             return messagesStore.ListMessages(conversationId, startCt, endCt, limit);
         }
 
-        public async Task AddMessage(string conversationId, Message message)
+        public async Task AddMessage(string conversationId, string messageId, Message message)
         {
             if (message == null)
             {
@@ -132,13 +132,18 @@ namespace ChatService.Storage.Azure
                 throw new ArgumentNullException(nameof(conversationId));
             }
 
+            if (string.IsNullOrWhiteSpace(messageId))
+            {
+                throw new ArgumentNullException(nameof(messageId));
+            }
+
             if (string.IsNullOrWhiteSpace(message.SenderUsername))
             {
                 throw new ArgumentNullException(nameof(message.SenderUsername));
             }
 
             // Add the message first
-            await messagesStore.AddMessage(conversationId, message);
+            await messagesStore.AddMessage(conversationId, messageId, message);
 
             // Then update the conversations modified date for each user
             ConversationEntity conversationEntity = await RetrieveConversationEntity(message.SenderUsername, conversationId);
@@ -149,6 +154,21 @@ namespace ChatService.Storage.Azure
                 tasks.Add(UpdateConversationModifiedDateForUser(participant, conversationId, message));
             }
             await Task.WhenAll(tasks);
+        }
+
+        public async Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId))
+            {
+                throw new ArgumentNullException(nameof(conversationId));
+            }
+
+            if (string.IsNullOrWhiteSpace(messageId))
+            {
+                throw new ArgumentNullException(nameof(messageId));
+            }
+
+            return await messagesStore.TryGetMessage(conversationId, messageId);
         }
 
         private async Task UpdateConversationModifiedDateForUser(string username, string conversationId, Message message)

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading.Tasks;
 using ChatService.Storage.Azure;
@@ -11,6 +12,7 @@ namespace ChatService.Storage.Metrics
         private readonly IConversationsStore store;
         private readonly AggregateMetric listMessagesMetric;
         private readonly AggregateMetric addMessageMetric;
+        private readonly AggregateMetric getMessageMetric;
         private readonly AggregateMetric addConversationMetric;
         private readonly AggregateMetric listConversationsMetric;
         private readonly AggregateMetric getConversationMetric;
@@ -21,6 +23,7 @@ namespace ChatService.Storage.Metrics
 
             listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesfromConversationsStoreTime");
             addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageToConversationsStoreTime");
+            getMessageMetric = metricsClient.CreateAggregateMetric("GetMessageFromConversationsStoreTime");
             listConversationsMetric = metricsClient.CreateAggregateMetric("ListConversationsTime");
             addConversationMetric = metricsClient.CreateAggregateMetric("AddConversationTime");
             getConversationMetric = metricsClient.CreateAggregateMetric("GetConversationsTime");
@@ -31,9 +34,14 @@ namespace ChatService.Storage.Metrics
             return listMessagesMetric.TrackTime(() => store.ListMessages(conversationId, startCt, endCt, limit));
         }
 
-        public Task AddMessage(string conversationId, Message message)
+        public Task AddMessage(string conversationId, string messageId, Message message)
         {
-            return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
+            return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, messageId, message));
+        }
+
+        public Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
+        {
+            return getMessageMetric.TrackTime(() => store.TryGetMessage(conversationId, messageId));
         }
 
         public Task<SortedConversationsWindow> ListConversations(string username, string startCt, string endCt, int limit)

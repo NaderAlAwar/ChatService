@@ -6,6 +6,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Moq;
 using System.Threading.Tasks;
+using ChatService.Controllers;
 using ChatService.DataContracts;
 using ChatService.Notifications;
 using Microsoft.AspNetCore.Mvc;

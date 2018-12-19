@@ -121,7 +121,6 @@ namespace ChatServiceFunctionalTests
             );
 
             var conversationDto = await chatServiceClient.AddConversation(createConversationDto);
-            DateTime dateTime = DateTime.UtcNow;
 
             var messages = new[] {
                 new SendMessageDto("Hola what's up?", participant1),
@@ -178,6 +177,62 @@ namespace ChatServiceFunctionalTests
             Assert.AreEqual(message3.Text, listMessagesDto.Messages[0].Text);
             Assert.AreEqual(message2.Text, listMessagesDto.Messages[1].Text);
             Assert.AreEqual(message1.Text, listMessagesDto.Messages[2].Text);
+        }
+
+        [TestMethod]
+        public async Task AddListMessagesV2()
+        {
+            string participant1 = RandomString();
+            string participant2 = RandomString();
+            var createConversationDto = new CreateConversationDto
+            {
+                Participants = new[] { participant1, participant2 }
+            };
+
+            await Task.WhenAll(
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1" }),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" })
+            );
+
+            var conversationDto = await chatServiceClient.AddConversation(createConversationDto);
+            var message1 = new SendMessageDtoV2("Hello", participant1, RandomString());
+            var message2 = new SendMessageDtoV2("What's up?", participant1, RandomString());
+            var message3 = new SendMessageDtoV2("Not much!", participant2, RandomString());
+            await chatServiceClient.SendMessage(conversationDto.Id, message1);
+            await chatServiceClient.SendMessage(conversationDto.Id, message2);
+            await chatServiceClient.SendMessage(conversationDto.Id, message3);
+
+            ListMessagesDto listMessagesDto = await chatServiceClient.ListMessages(conversationDto.Id);
+            Assert.AreEqual(3, listMessagesDto.Messages.Count);
+            Assert.AreEqual(message3.Text, listMessagesDto.Messages[0].Text);
+            Assert.AreEqual(message2.Text, listMessagesDto.Messages[1].Text);
+            Assert.AreEqual(message1.Text, listMessagesDto.Messages[2].Text);
+        }
+
+        [TestMethod]
+        public async Task AddTwoMessagesWithTheSameMessageId()
+        {
+            string participant1 = RandomString();
+            string participant2 = RandomString();
+            var createConversationDto = new CreateConversationDto
+            {
+                Participants = new[] { participant1, participant2 }
+            };
+
+            await Task.WhenAll(
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant1, FirstName = "Participant", LastName = "1" }),
+                chatServiceClient.CreateProfile(new CreateProfileDto { Username = participant2, FirstName = "Participant", LastName = "2" })
+            );
+
+            var conversationDto = await chatServiceClient.AddConversation(createConversationDto);
+            var messageId = RandomString();
+            var message1 = new SendMessageDtoV2("Hello", participant1, messageId);
+            var message2 = new SendMessageDtoV2("Hello", participant1, messageId);
+            await chatServiceClient.SendMessage(conversationDto.Id, message1);
+            await chatServiceClient.SendMessage(conversationDto.Id, message2);
+
+            ListMessagesDto listMessagesDto = await chatServiceClient.ListMessages(conversationDto.Id);
+            Assert.AreEqual(1, listMessagesDto.Messages.Count);
         }
 
         private static string RandomString()

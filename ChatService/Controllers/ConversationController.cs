@@ -5,35 +5,27 @@ using System.Threading.Tasks;
 using ChatService.DataContracts;
 using ChatService.Logging;
 using ChatService.Notifications;
+using ChatService.Services;
 using ChatService.Storage;
-using ChatService.Utils;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
-using Polly;
-using Polly.Wrap;
 
 namespace ChatService.Controllers
 {
+    [ApiVersion("1.0")]
+    [ApiVersion("2.0")]
     [Route("api/[controller]")]
+    [Route("api/v{version:apiVersion}/[controller]")]
     public class ConversationController : Controller
     {
-        private readonly IConversationsStore conversationsStore;
         private readonly ILogger<ConversationController> logger;
-        private readonly IMetricsClient metricsClient;
-        private readonly INotificationService notificationService;
-        private readonly AggregateMetric postMessageControllerTimeMetric;
-        private readonly AggregateMetric listMessagesControllerTimeMetric;
+        private readonly IConversationService conversationService;
 
-        public ConversationController(IConversationsStore conversationsStore, ILogger<ConversationController> logger, IMetricsClient metricsClient,
-            INotificationService notificationService)
+        public ConversationController(ILogger<ConversationController> logger, IConversationService conversationService)
         {
-            this.conversationsStore = conversationsStore;
             this.logger = logger;
-            this.metricsClient = metricsClient;
-            this.notificationService = notificationService;
-            listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
-            postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
+            this.conversationService = conversationService;
         }
 
         [HttpGet("{conversationId}")]
@@ -41,20 +33,8 @@ namespace ChatService.Controllers
         {
             try
             {
-                return await listMessagesControllerTimeMetric.TrackTime(async () =>
-                {
-                    var messagesWindow = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);
-                    List<ListMessagesItemDto> dtos =
-                        (messagesWindow.Messages.Select(m => new ListMessagesItemDto(m.Text, m.SenderUsername, m.UtcTime))).ToList();
-                        
-                    string newStartCt = messagesWindow.StartCt;
-                    string newEndCt = messagesWindow.EndCt;
-
-                    string nextUri = (string.IsNullOrEmpty(newStartCt)) ? "" : $"api/conversation/{conversationId}?startCt={newStartCt}&limit={limit}";
-                    string previousUri = (string.IsNullOrEmpty(newEndCt)) ? "" : $"api/conversation/{conversationId}?endCt={newEndCt}&limit={limit}";
-
-                    return Ok(new ListMessagesDto(dtos, nextUri, previousUri));
-                });
+                var listMessagesDto = await conversationService.ListMessages(conversationId, startCt, endCt, limit);
+                return Ok(listMessagesDto);
             }
             catch (StorageErrorException e)
             {
@@ -71,27 +51,13 @@ namespace ChatService.Controllers
         }
 
         [HttpPost("{id}")]
+        [MapToApiVersion("1.0")]
         public async Task<IActionResult> PostMessage(string id, [FromBody] SendMessageDto messageDto)
         {
             try
             {
-                return await postMessageControllerTimeMetric.TrackTime(async () =>
-                {
-                    var currentTime = DateTime.Now;
-                    var message = new Message(messageDto.Text, messageDto.SenderUsername, currentTime);
-                    await conversationsStore.AddMessage(id, message);
-
-                    logger.LogInformation(Events.ConversationMessageAdded,
-                        "Message has been added to conversation {conversationId}, sender: {senderUsername}", id, messageDto.SenderUsername);
-
-                    var conversation = await conversationsStore.GetConversation(messageDto.SenderUsername, id);
-                    var usersToNotify = conversation.Participants;
-                    var newMessagePayload = new NotificationPayload(currentTime, "MessageAdded", id, usersToNotify);
-
-                    await notificationService.SendNotificationAsync(newMessagePayload);
-                    
-                    return Ok(message);
-                });
+                var message = await conversationService.PostMessage(id, messageDto);
+                return Ok(message);
             }
             catch (StorageErrorException e)
             {
@@ -102,6 +68,29 @@ namespace ChatService.Controllers
             catch (Exception e)
             {
                 logger.LogError(Events.InternalError, e, 
+                    "Failed to add message to conversation, conversationId: {conversationId}", id);
+                return StatusCode(500, $"Failed to add message to conversation, conversationId: {id}");
+            }
+        }
+
+        [HttpPost("{id}")]
+        [MapToApiVersion("2.0")]
+        public async Task<IActionResult> PostMessage(string id, [FromBody] SendMessageDtoV2 messageDto)
+        {
+            try
+            {
+                var message = await conversationService.PostMessage(id, messageDto);
+                return Ok(message);
+            }
+            catch (StorageErrorException e)
+            {
+                logger.LogError(Events.StorageError, e,
+                    "Could not reach storage to add message, conversationId {conversationId}", id);
+                return StatusCode(503, $"Could not reach storage to add message, conversationId {id}");
+            }
+            catch (Exception e)
+            {
+                logger.LogError(Events.InternalError, e,
                     "Failed to add message to conversation, conversationId: {conversationId}", id);
                 return StatusCode(500, $"Failed to add message to conversation, conversationId: {id}");
             }

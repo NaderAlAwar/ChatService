@@ -70,7 +70,7 @@ namespace ChatServiceTests
 
             foreach (var message in messages)
             {
-                await store.AddMessage(conversationId, message);
+                await store.AddMessage(conversationId, RandomString(), message);
             }
 
             List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).Messages.ToList();
@@ -102,7 +102,7 @@ namespace ChatServiceTests
 
             foreach (var message in messages)
             {
-                await store.AddMessage(conversationId, message);
+                await store.AddMessage(conversationId, RandomString(), message);
             }
 
             List<Message> listedMessages = (await store.ListMessages(conversationId, "", "", 50)).Messages.ToList();
@@ -159,7 +159,7 @@ namespace ChatServiceTests
 
             // this conversation should become the most recent because we added a message to it
             Message message = new Message("bla bla", userA, dateTime.AddSeconds(4));
-            await store.AddMessage(conversations[0].Id, message);
+            await store.AddMessage(conversations[0].Id, RandomString(), message);
 
             var userAConversations = (await store.ListConversations(userA, "", "", 50)).Conversations.ToList();
             Assert.AreEqual(3, userAConversations.Count());
@@ -238,7 +238,7 @@ namespace ChatServiceTests
 
             foreach (var message in messages)
             {
-                await store.AddMessage(conversationId, message);
+                await store.AddMessage(conversationId, RandomString(), message);
             }
 
             List<Message> returnedMessages = (await store.ListMessages(conversationId, DateTimeUtils.FromDateTimeToInvertedString(dateTime), "", 2)).Messages.ToList();

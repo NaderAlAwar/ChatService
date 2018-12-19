@@ -37,7 +37,7 @@ namespace ChatServiceTests
         {
             tableMock.Setup(m => m.ExecuteAsync(It.IsAny<TableOperation>()))
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 503 }, "Storage is down", null));
-            await store.AddMessage("conversationId", new Message("text", "username", DateTime.UtcNow));
+            await store.AddMessage("conversationId", "messageId", new Message("text", "username", DateTime.UtcNow));
         }
 
         [TestMethod]
@@ -46,7 +46,7 @@ namespace ChatServiceTests
         {
             tableMock.Setup(m => m.ExecuteAsync(It.IsAny<TableOperation>()))
                 .ThrowsAsync(new StorageException(new RequestResult { HttpStatusCode = 409 }, "Message already exists", null));
-            await store.AddMessage("conversationId", new Message("text", "username", DateTime.UtcNow));
+            await store.AddMessage("conversationId", "messageId", new Message("text", "username", DateTime.UtcNow));
         }
 
         [DataRow(null)]
@@ -55,7 +55,7 @@ namespace ChatServiceTests
         [ExpectedException(typeof(ArgumentNullException))]
         public async Task AddMessage_InvalidSenderUsername(string username)
         {
-            await store.AddMessage(Guid.NewGuid().ToString(),
+            await store.AddMessage(Guid.NewGuid().ToString(), Guid.NewGuid().ToString(),
                 new Message(Guid.NewGuid().ToString(), username, DateTime.Now));
         }
     }

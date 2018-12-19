@@ -6,7 +6,7 @@ namespace ChatService.Storage
 {
     public class Message
     {
-        public Message(string text, string senderUsername, DateTime utcTime)
+        public Message(string text, string senderUsername,DateTime utcTime)
         {
             Text = text;
             SenderUsername = senderUsername;

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 
 namespace ChatService.Storage
@@ -7,6 +8,8 @@ namespace ChatService.Storage
     {
         Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit);
 
-        Task AddMessage(string conversationId, Message message);
+        Task AddMessage(string conversationId, string messageId, Message message);
+
+        Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId);
     }
 }

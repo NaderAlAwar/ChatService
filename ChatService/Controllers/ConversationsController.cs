@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -7,12 +6,9 @@ using ChatService.DataContracts;
 using ChatService.Logging;
 using ChatService.Notifications;
 using ChatService.Storage;
-using ChatService.Storage.Azure;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Metrics;
-using Polly;
-using Polly.Wrap;
 
 namespace ChatService.Controllers
 {

@@ -10,6 +10,7 @@ namespace ChatService.Storage.Metrics
     {
         private readonly IMessagesStore store;
         private readonly AggregateMetric addMessageMetric;
+        private readonly AggregateMetric getMessageMetric;
         private readonly AggregateMetric listMessagesMetric;
 
         public MessagesStoreMetricsDecorator(IMessagesStore store, IMetricsClient metricsClient)
@@ -17,12 +18,18 @@ namespace ChatService.Storage.Metrics
             this.store = store;
 
             addMessageMetric = metricsClient.CreateAggregateMetric("AddMessageToMessageStoreTime");
+            getMessageMetric = metricsClient.CreateAggregateMetric("GetMessageFromMessageStoreTime");
             listMessagesMetric = metricsClient.CreateAggregateMetric("ListMessagesFromMessageStoreTime");
         }
 
-        public Task AddMessage(string conversationId, Message message)
+        public Task AddMessage(string conversationId, string messageId, Message message)
         {
-            return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, message));
+            return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, messageId, message));
+        }
+
+        public Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
+        {
+            return getMessageMetric.TrackTime(() => store.TryGetMessage(conversationId, messageId));
         }
 
         public Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit)
