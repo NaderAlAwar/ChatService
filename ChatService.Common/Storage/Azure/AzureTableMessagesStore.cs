@@ -65,7 +65,7 @@ namespace ChatService.Storage.Azure
             }
         }
 
-        public async Task AddMessage(string conversationId, Message message)
+        public async Task AddMessage(string conversationId, string messageId, Message message)
         {
             if (string.IsNullOrWhiteSpace(message.SenderUsername))
             {
@@ -77,7 +77,8 @@ namespace ChatService.Storage.Azure
                 PartitionKey = conversationId,
                 RowKey = DateTimeUtils.FromDateTimeToInvertedString(message.UtcTime),
                 SenderUsername = message.SenderUsername,
-                Text = message.Text
+                Text = message.Text,
+                MessageId = messageId
             };
 
             var insertOperation = TableOperation.Insert(entity);
@@ -96,6 +97,47 @@ namespace ChatService.Storage.Azure
                 }
                 throw new StorageErrorException("Could not write to Azure Table", e);
             }
+        }
+
+        public async Task<Message> GetMessage(string conversationId, string messageId)
+        {
+            if (string.IsNullOrWhiteSpace(conversationId))
+            {
+                throw new ArgumentNullException(nameof(conversationId));
+            }
+
+            if (string.IsNullOrWhiteSpace(messageId))
+            {
+                throw new ArgumentNullException(nameof(messageId));
+            }
+
+            TableQuery<MessageEntity> query = new TableQuery<MessageEntity>().Where(
+                TableQuery.GenerateFilterCondition("PartitionKey", QueryComparisons.Equal, conversationId));
+
+            try
+            {
+                var results = await table.ExecuteQuery(query);
+                List<MessageEntity> entities = results.Results;
+
+                foreach (var messageEntity in entities)
+                {
+                    if (messageEntity.MessageId == messageId)
+                    {
+                        long ticks = long.Parse(messageEntity.RowKey);
+                        ticks = DateTimeUtils.InvertTicks(ticks);
+                        var utcTime = new DateTime(ticks);
+                        return new Message(messageEntity.Text, messageEntity.SenderUsername, utcTime);
+                    }
+                }
+
+                throw new MessageNotFoundException($"Could not find a message with id {messageId}");
+            }
+            catch (Exception e)
+            {
+                Console.WriteLine(e);
+                throw;
+            }
+
         }
     }
 }

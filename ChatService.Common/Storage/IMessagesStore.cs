@@ -7,6 +7,8 @@ namespace ChatService.Storage
     {
         Task<SortedMessagesWindow> ListMessages(string conversationId, string startCt, string endCt, int limit);
 
-        Task AddMessage(string conversationId, Message message);
+        Task AddMessage(string conversationId, string messageId, Message message);
+
+        Task<Message> GetMessage(string conversationId, string messageId);
     }
 }

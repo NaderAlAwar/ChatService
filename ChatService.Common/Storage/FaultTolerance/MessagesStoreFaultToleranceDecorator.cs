@@ -21,10 +21,17 @@ namespace ChatService.Storage.FaultTolerance
             );
         }
 
-        public Task AddMessage(string conversationId, Message message)
+        public Task AddMessage(string conversationId, string messageId, Message message)
         {
             return faultTolerancePolicy.Execute(
-                async () => await store.AddMessage(conversationId, message)
+                async () => await store.AddMessage(conversationId, messageId, message)
+            );
+        }
+
+        public Task<Message> GetMessage(string conversationId, string messageId)
+        {
+            return faultTolerancePolicy.Execute(
+                async () => await store.GetMessage(conversationId, messageId)
             );
         }
     }

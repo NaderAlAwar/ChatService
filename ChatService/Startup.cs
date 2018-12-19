@@ -1,12 +1,15 @@
 ﻿using System;
+using Microsoft.AspNetCore.Mvc.Versioning;
 using ChatService.FaultTolerance;
 using ChatService.Notifications;
+using ChatService.Services;
 using ChatService.Storage;
 using ChatService.Storage.Azure;
 using ChatService.Storage.FaultTolerance;
 using ChatService.Storage.Metrics;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Hosting;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.Azure.ServiceBus;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -32,6 +35,12 @@ namespace ChatService
         public void ConfigureServices(IServiceCollection services)
         {
             services.AddOptions();
+            services.AddApiVersioning(
+                o =>
+                {
+                    o.AssumeDefaultVersionWhenUnspecified = true;
+                    o.DefaultApiVersion = new ApiVersion(1, 0);
+                } );
 
             var azureStorageSettings = GetSettings<AzureStorageSettings>();
             var notificationServiceSettings = GetSettings<NotificationServiceSettings>();
@@ -90,6 +99,12 @@ namespace ChatService
                         conversationsStore,
                         context.GetRequiredService<ISyncPolicy>()),
                     context.GetRequiredService<IMetricsClient>()));
+
+            services.AddSingleton<IConversationService>(context =>
+                new ConversationService(
+                    context.GetRequiredService<IConversationsStore>(),
+                    context.GetRequiredService<ILogger<ConversationService>>(),
+                    context.GetRequiredService<INotificationService>()));
 
             services.AddLogging();
             services.AddMvc();
