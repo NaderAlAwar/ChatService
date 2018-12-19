@@ -27,7 +27,7 @@ namespace ChatService.Storage.Metrics
             return addMessageMetric.TrackTime(() => store.AddMessage(conversationId, messageId, message));
         }
 
-        public Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
+        public Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
         {
             return getMessageMetric.TrackTime(() => store.TryGetMessage(conversationId, messageId));
         }

@@ -156,7 +156,7 @@ namespace ChatService.Storage.Azure
             await Task.WhenAll(tasks);
         }
 
-        public async Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
+        public async Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
             {

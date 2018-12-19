@@ -29,7 +29,7 @@ namespace ChatService.Storage.FaultTolerance
             );
         }
 
-        public Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
+        public Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
         {
             return faultTolerancePolicy.Execute(
                 async () => await store.TryGetMessage(conversationId, messageId)

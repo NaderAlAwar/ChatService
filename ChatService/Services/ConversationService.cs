@@ -39,9 +39,9 @@ namespace ChatService.Services
         {
             var matchingMessage = await conversationsStore.TryGetMessage(conversationId, messageDto.MessageId);
 
-            if (matchingMessage.Item1 == true) // if the message was found in storage
+            if (matchingMessage.found) // if the message was found in storage
             {
-                return matchingMessage.Item2;
+                return matchingMessage.message;
             }
 
             var currentTime = DateTime.Now;

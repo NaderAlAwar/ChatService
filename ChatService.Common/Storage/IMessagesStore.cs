@@ -10,6 +10,6 @@ namespace ChatService.Storage
 
         Task AddMessage(string conversationId, string messageId, Message message);
 
-        Task<Tuple<bool, Message>> TryGetMessage(string conversationId, string messageId);
+        Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId);
     }
 }

@@ -99,7 +99,7 @@ namespace ChatService.Storage.Azure
             }
         }
 
-        public async Task<Tuple<bool,Message>> TryGetMessage(string conversationId, string messageId)
+        public async Task<(bool found, Message message)> TryGetMessage(string conversationId, string messageId)
         {
             if (string.IsNullOrWhiteSpace(conversationId))
             {
@@ -126,11 +126,11 @@ namespace ChatService.Storage.Azure
                         long ticks = long.Parse(messageEntity.RowKey);
                         ticks = DateTimeUtils.InvertTicks(ticks);
                         var utcTime = new DateTime(ticks);
-                        return new Tuple<bool,Message>(true, new Message(messageEntity.Text, messageEntity.SenderUsername, utcTime));
+                        return (true, new Message(messageEntity.Text, messageEntity.SenderUsername, utcTime));
                     }
                 }
 
-                return new Tuple<bool, Message>(false, null);
+                return (false, null);
             }
             catch (Exception e)
             {
