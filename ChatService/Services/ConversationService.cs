@@ -25,17 +25,17 @@ namespace ChatService.Services
             this.notificationService = notificationService;
         }
 
-        public async Task<Message> HandlePostMessageRequest(string conversationId, SendMessageDto messageDto)
+        public async Task<Message> PostMessage(string conversationId, SendMessageDto messageDto)
         {
             var currentTime = DateTime.Now;
             string messageId = GenerateMessageId(messageDto, currentTime);
             var messageDtoV2 = new SendMessageDtoV2(messageDto.Text, messageDto.SenderUsername, messageId);
 
-            return await HandlePostMessageRequest(conversationId, messageDtoV2);
+            return await PostMessage(conversationId, messageDtoV2);
 
         }
 
-        public async Task<Message> HandlePostMessageRequest(string conversationId, SendMessageDtoV2 messageDto)
+        public async Task<Message> PostMessage(string conversationId, SendMessageDtoV2 messageDto)
         {
             var matchingMessage = await conversationsStore.TryGetMessage(conversationId, messageDto.MessageId);
 
@@ -62,7 +62,7 @@ namespace ChatService.Services
             return message;
         }
 
-        public async Task<ListMessagesDto> HandleListMessagesRequest(string conversationId, [FromQuery] string startCt,
+        public async Task<ListMessagesDto> ListMessages(string conversationId, [FromQuery] string startCt,
             [FromQuery] string endCt, [FromQuery] int limit)
         {
             var messagesWindow = await conversationsStore.ListMessages(conversationId, startCt, endCt, limit);

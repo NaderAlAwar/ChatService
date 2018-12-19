@@ -20,18 +20,12 @@ namespace ChatService.Controllers
     public class ConversationController : Controller
     {
         private readonly ILogger<ConversationController> logger;
-        private readonly IMetricsClient metricsClient;
         private readonly IConversationService conversationService;
-        private readonly AggregateMetric postMessageControllerTimeMetric;
-        private readonly AggregateMetric listMessagesControllerTimeMetric;
 
-        public ConversationController(ILogger<ConversationController> logger, IMetricsClient metricsClient, IConversationService conversationService)
+        public ConversationController(ILogger<ConversationController> logger, IConversationService conversationService)
         {
             this.logger = logger;
-            this.metricsClient = metricsClient;
             this.conversationService = conversationService;
-            listMessagesControllerTimeMetric = this.metricsClient.CreateAggregateMetric("ListMessagesControllerTime");
-            postMessageControllerTimeMetric = this.metricsClient.CreateAggregateMetric("PostMessageControllerTime");
         }
 
         [HttpGet("{conversationId}")]
@@ -39,13 +33,8 @@ namespace ChatService.Controllers
         {
             try
             {
-                return await listMessagesControllerTimeMetric.TrackTime(async () =>
-                {
-                    var listMessagesDto =
-                        await conversationService.HandleListMessagesRequest(conversationId, startCt, endCt, limit);
-
-                    return Ok(listMessagesDto);
-                });
+                var listMessagesDto = await conversationService.ListMessages(conversationId, startCt, endCt, limit);
+                return Ok(listMessagesDto);
             }
             catch (StorageErrorException e)
             {
@@ -67,11 +56,8 @@ namespace ChatService.Controllers
         {
             try
             {
-                return await postMessageControllerTimeMetric.TrackTime(async () =>
-                {
-                    var message = await conversationService.HandlePostMessageRequest(id, messageDto);
-                    return Ok(message);
-                });
+                var message = await conversationService.PostMessage(id, messageDto);
+                return Ok(message);
             }
             catch (StorageErrorException e)
             {
@@ -93,11 +79,8 @@ namespace ChatService.Controllers
         {
             try
             {
-                return await postMessageControllerTimeMetric.TrackTime(async () =>
-                {
-                    var message = await conversationService.HandlePostMessageRequest(id, messageDto);
-                    return Ok(message);
-                });
+                var message = await conversationService.PostMessage(id, messageDto);
+                return Ok(message);
             }
             catch (StorageErrorException e)
             {

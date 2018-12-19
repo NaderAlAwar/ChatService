@@ -101,10 +101,12 @@ namespace ChatService
                     context.GetRequiredService<IMetricsClient>()));
 
             services.AddSingleton<IConversationService>(context =>
-                new ConversationService(
-                    context.GetRequiredService<IConversationsStore>(),
-                    context.GetRequiredService<ILogger<ConversationService>>(),
-                    context.GetRequiredService<INotificationService>()));
+                new ConversationServiceMetricsDecorator(
+                    new ConversationService(
+                        context.GetRequiredService<IConversationsStore>(),
+                        context.GetRequiredService<ILogger<ConversationService>>(),
+                        context.GetRequiredService<INotificationService>()),
+                    context.GetRequiredService<IMetricsClient>()));
 
             services.AddLogging();
             services.AddMvc();

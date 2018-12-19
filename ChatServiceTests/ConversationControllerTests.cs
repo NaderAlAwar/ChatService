@@ -26,7 +26,6 @@ namespace ChatServiceTests
         readonly Mock<IConversationsStore> conversationsStoreMock = new Mock<IConversationsStore>();
         readonly Mock<ILogger<ConversationService>> serviceLoggerMock = new Mock<ILogger<ConversationService>>();
         readonly Mock<ILogger<ConversationController>> controllerLoggerMock = new Mock<ILogger<ConversationController>>();
-        readonly Mock<IMetricsClient> metricsMock = new Mock<IMetricsClient>();
         readonly Mock<INotificationService> notificationServiceMock = new Mock<INotificationService>();
         private ConversationService conversationService;
         private ConversationController conversationController;
@@ -34,11 +33,9 @@ namespace ChatServiceTests
         [TestInitialize]
         public void TestInitialize()
         {
-            metricsMock.Setup(metricsMock => metricsMock.CreateAggregateMetric(It.IsAny<string>()))
-                .Returns(new AggregateMetric("TestMetric", metricsMock.Object, TimeSpan.Zero));
             conversationService = new ConversationService(conversationsStoreMock.Object, serviceLoggerMock.Object,
                 notificationServiceMock.Object);
-            conversationController = new ConversationController(controllerLoggerMock.Object, metricsMock.Object, conversationService);
+            conversationController = new ConversationController(controllerLoggerMock.Object, conversationService);
         }
 
         [TestMethod]

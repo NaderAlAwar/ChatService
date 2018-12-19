@@ -7,9 +7,9 @@ namespace ChatService.Services
 {
     public interface IConversationService
     {
-        Task<Message> HandlePostMessageRequest(string conversationId, SendMessageDto messageDto);
-        Task<Message> HandlePostMessageRequest(string conversationId, SendMessageDtoV2 messageDto);
-        Task<ListMessagesDto> HandleListMessagesRequest(string conversationId, [FromQuery] string startCt,
+        Task<Message> PostMessage(string conversationId, SendMessageDto messageDto);
+        Task<Message> PostMessage(string conversationId, SendMessageDtoV2 messageDto);
+        Task<ListMessagesDto> ListMessages(string conversationId, [FromQuery] string startCt,
             [FromQuery] string endCt, [FromQuery] int limit);
     }
 }
